@@ -1,0 +1,3343 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal Finance Manager Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@0.303.0/dist/umd/lucide.min.js"></script>
+<style>
+/* ===== Design tokens ===== */
+:root, [data-theme="light"]{
+  --bg:#f2f4f3; --sidebar:#49111c; --sidebar-hover:#5c1a26; --card:#ffffff;
+  --border:#e6e4df; --border-strong:#9c8670;
+  --text:#0a0908; --muted:#5e503f; --faint:#7d6a5b;
+  --accent:#49111c; --accent-text:#f2f4f3; --accent-soft:#f1e7e9;
+  --green:#2f6b4c; --green-soft:#e7efe9;
+  --red:#c2382c; --red-soft:#f9e8e5;
+  --amber:#96610f; --amber-soft:#f7efe1;
+  --shadow:0 1px 2px rgba(10,9,8,.05), 0 8px 24px -12px rgba(10,9,8,.16);
+  --grid-line:rgba(10,9,8,.07);
+}
+[data-theme="dark"]{
+  --bg:#0a0908; --sidebar:#49111c; --sidebar-hover:#5c1a26; --card:#151211;
+  --border:#2c2624; --border-strong:#8a7663;
+  --text:#f2f4f3; --muted:#c3ae99; --faint:#a9927d;
+  --accent:#a9927d; --accent-text:#0a0908; --accent-soft:#241d1c;
+  --green:#63a886; --green-soft:#14261e;
+  --red:#e27066; --red-soft:#2e1815;
+  --amber:#d5a04f; --amber-soft:#2a2013;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  --grid-line:rgba(242,244,243,.08);
+}
+[data-theme="contrast"]{
+  --bg:#f2f4f3; --sidebar:#49111c; --sidebar-hover:#5c1a26; --card:#ffffff;
+  --border:#a9927d; --border-strong:#5e503f;
+  --text:#0a0908; --muted:#4a3f33; --faint:#5e503f;
+  --accent:#49111c; --accent-text:#f2f4f3; --accent-soft:#ecdee1;
+  --green:#1f5540; --green-soft:#dcebe3;
+  --red:#a32a20; --red-soft:#f7e3df;
+  --amber:#7a4c08; --amber-soft:#f5ead6;
+  --shadow:0 2px 0 rgba(10,9,8,.14);
+  --grid-line:rgba(10,9,8,.14);
+}
+*{ -webkit-tap-highlight-color:transparent; }
+html,body{ height:100%; }
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-size:14px; -webkit-font-smoothing:antialiased;
+}
+.tnum{ font-variant-numeric:tabular-nums; }
+.text-wrap-pretty{ text-wrap:pretty; }
+::selection{ background:var(--accent-soft); color:var(--text); }
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:8px; border:3px solid transparent; background-clip:padding-box; }
+::-webkit-scrollbar-thumb:hover{ background:var(--faint); background-clip:padding-box; border:3px solid transparent; }
+
+/* ===== Components ===== */
+.card{ background:var(--card); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); }
+.card-flat{ background:var(--card); border:1px solid var(--border); border-radius:14px; }
+.card-hover{ transition:border-color .18s ease, box-shadow .18s ease; }
+@media (hover:hover) and (pointer:fine){
+  .card-hover:hover{ border-color:var(--border-strong); box-shadow:var(--shadow); }
+}
+.eyebrow{ font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--faint); }
+.btn{ display:inline-flex; align-items:center; gap:7px; border-radius:10px; font-weight:600; font-size:13px;
+  padding:8px 13px; border:1px solid var(--border); background:var(--card); color:var(--text);
+  cursor:pointer; transition:background .15s ease, border-color .15s ease, transform .12s ease, color .15s ease; }
+.btn:hover{ background:var(--bg); border-color:var(--border-strong); }
+.btn:active{ transform:scale(.975); }
+.btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+.btn-primary{ background:var(--accent); color:var(--accent-text); border-color:var(--accent); }
+.btn-primary:hover{ background:var(--accent); color:var(--accent-text); filter:brightness(1.15); }
+.btn-danger{ background:var(--red); color:#fff; border-color:var(--red); }
+.btn-danger:hover{ background:var(--red); color:#fff; filter:brightness(1.1); }
+.btn-ghost{ background:transparent; border-color:transparent; }
+.btn-ghost:hover{ background:var(--bg); border-color:var(--border); }
+.btn-sm{ padding:5px 9px; font-size:12px; border-radius:8px; }
+.icon-btn{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px;
+  border:1px solid var(--border); background:var(--card); color:var(--muted); cursor:pointer;
+  transition:background .15s ease, color .15s ease, border-color .15s ease, transform .12s ease; }
+.icon-btn:hover{ background:var(--bg); color:var(--text); border-color:var(--border-strong); }
+.icon-btn:active{ transform:scale(.94); }
+.icon-btn.sm{ width:28px; height:28px; border-radius:8px; }
+.inp, select.inp{ width:100%; background:var(--card); border:1px solid var(--border); border-radius:10px;
+  padding:9px 11px; font-size:13.5px; color:var(--text); font-family:inherit;
+  transition:border-color .15s ease, box-shadow .15s ease, background .15s ease; }
+.inp::placeholder{ color:var(--faint); }
+.inp:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); background:var(--card); }
+select.inp{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 16px) 55%, calc(100% - 11px) 55%; background-size:5px 5px,5px 5px; background-repeat:no-repeat; padding-right:30px; }
+label.fld{ display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-bottom:5px; letter-spacing:.02em; }
+.chip{ display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:99px; font-size:11.5px; font-weight:600;
+  background:var(--bg); border:1px solid var(--border); color:var(--muted); }
+.badge{ display:inline-flex; align-items:center; gap:5px; padding:2.5px 8px; border-radius:7px; font-size:11px; font-weight:700; letter-spacing:.01em; }
+.badge-green{ background:var(--green-soft); color:var(--green); }
+.badge-red{ background:var(--red-soft); color:var(--red); }
+.badge-amber{ background:var(--amber-soft); color:var(--amber); }
+.badge-neutral{ background:var(--accent-soft); color:var(--text); }
+.dot{ width:8px; height:8px; border-radius:99px; flex:none; }
+.progress{ height:7px; background:var(--bg); border:1px solid var(--border); border-radius:99px; overflow:hidden; }
+.progress > span{ display:block; height:100%; border-radius:99px; transition:width .5s cubic-bezier(.22,1,.36,1); }
+.hairline{ border-color:var(--border); }
+.stat-value{ font-size:24px; font-weight:700; letter-spacing:-.02em; line-height:1.15; }
+.kpi{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:13px 14px;
+  transition:border-color .18s ease, box-shadow .18s ease; position:relative; overflow:hidden; }
+@media (hover:hover) and (pointer:fine){
+  .kpi:hover{ border-color:var(--border-strong); box-shadow:var(--shadow); }
+}
+/* Section heads: small caps title anchored on a hairline rule (broadsheet voice) */
+.section-head{ display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+.section-title{ font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--text); white-space:nowrap; }
+.section-rule{ flex:1; min-width:24px; height:1px; background:var(--border); }
+.section-meta{ display:inline-flex; align-items:center; gap:8px; flex:none; }
+
+/* ===== Broadsheet (dashboard) ===== */
+.display{ font-family:'Fraunces',Georgia,'Times New Roman',serif; font-optical-sizing:auto;
+  font-variant-numeric:tabular-nums; }
+.dateline{ font-size:11px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; }
+
+.masthead{ background:var(--sidebar); color:#e9e2dc; padding:clamp(20px,3vw,34px) clamp(18px,3vw,36px) clamp(24px,3.4vw,38px); }
+.mast-dateline{ color:#a9927d; }
+.masthead .btn-primary{ background:#f2f4f3; color:#0a0908; border-color:#f2f4f3; }
+.masthead .btn-primary:hover{ background:#f2f4f3; color:#0a0908; filter:brightness(.94); }
+.masthead .btn:focus-visible{ outline:2px solid #a9927d; outline-offset:2px; }
+.mast-grid{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:22px 48px; margin-top:16px; }
+.mast-title{ font-size:clamp(26px,2.6vw,34px); font-weight:600; color:#f2f4f3; line-height:1;
+  letter-spacing:-.01em; margin:0 0 20px; }
+.mast-hero-label{ color:#a9927d; margin-bottom:8px; }
+.mast-hero{ font-size:clamp(46px,6.2vw,84px); font-weight:600; line-height:.98; letter-spacing:-.015em; color:#f2f4f3; }
+.mast-hero .cents{ font-size:.44em; letter-spacing:0; color:#d8c6b1; }
+.mast-mini{ display:flex; flex-direction:column; gap:7px; min-width:min(320px,100%); padding-bottom:4px; }
+.mast-mini .mrow{ display:flex; align-items:baseline; gap:8px; }
+.mast-mini .mk{ font-size:10.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  color:#a9927d; white-space:nowrap; }
+.mast-mini .mlead{ flex:1; min-width:20px; border-bottom:1px dotted rgba(242,244,243,.35); transform:translateY(-3px); }
+.mast-mini .mv{ font-size:13.5px; font-weight:600; color:#f2f4f3; white-space:nowrap; }
+
+.hero-stats{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border-bottom:1px solid var(--border); }
+.hero-stats > .hstat{ padding:20px 24px 22px; border-left:1px solid var(--border); min-width:0; }
+.hero-stats > .hstat:first-child{ border-left:none; padding-left:0; }
+.hero-value{ font-size:clamp(25px,2.3vw,31px); font-weight:600; letter-spacing:-.01em; line-height:1.12; margin-top:9px; }
+.stat-sub{ font-size:11.5px; color:var(--muted); margin-top:6px; }
+@media (max-width:767px){
+  .hero-stats{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .hero-stats > .hstat:nth-child(odd){ border-left:none; padding-left:0; }
+  .hero-stats > .hstat:nth-child(even){ padding-right:0; }
+}
+
+.att-row{ display:flex; align-items:flex-start; gap:13px; padding:13px 8px; margin:0 -8px;
+  border-bottom:1px solid var(--border); cursor:pointer; transition:background .12s ease; }
+.att-row:hover{ background:var(--card); }
+.att-row:last-child{ border-bottom:none; }
+.att-num{ font-size:15px; font-weight:600; width:24px; flex:none; line-height:1.35; }
+
+.ledger{ display:grid; grid-template-columns:1fr; column-gap:56px; }
+@media (min-width:640px){ .ledger{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+.led-row{ padding:11px 0; border-bottom:1px solid var(--border); }
+.led-main{ display:flex; align-items:baseline; gap:8px; }
+.led-label{ font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.led-lead{ flex:1; min-width:18px; border-bottom:1px dotted var(--border-strong); transform:translateY(-4px); }
+.led-value{ font-size:14.5px; font-weight:700; white-space:nowrap; }
+.led-sub{ font-size:11.5px; color:var(--muted); margin-top:3px; }
+
+.lt-table{ border-top:1px solid var(--text); }
+.lt-row{ display:grid; grid-template-columns:minmax(140px,1.1fr) minmax(120px,2fr) minmax(150px,auto) 54px;
+  align-items:center; gap:18px; padding:11px 0; border-bottom:1px solid var(--border); }
+.lt-name{ display:flex; align-items:center; gap:9px; font-size:13.5px; font-weight:600; min-width:0; }
+.lt-name span:last-child{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lt-bar{ height:7px; }
+.lt-amt{ font-size:12.5px; text-align:right; white-space:nowrap; }
+.lt-pct{ font-size:13px; font-weight:700; text-align:right; }
+@media (max-width:639px){
+  .lt-row{ grid-template-columns:1fr auto auto; gap:8px 14px; }
+  .lt-bar{ grid-column:1 / -1; grid-row:2; }
+  .lt-amt{ grid-column:1 / -1; grid-row:3; text-align:left; font-size:11.5px; }
+}
+
+/* ===== Tables ===== */
+.tbl{ width:100%; border-collapse:separate; border-spacing:0; font-size:13.5px; }
+.tbl thead th{ font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--faint);
+  text-align:left; padding:10px 12px; background:var(--bg); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:2; white-space:nowrap; }
+.tbl tbody td{ padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.tbl tbody tr{ transition:background .12s ease; }
+.tbl tbody tr:hover{ background:var(--bg); }
+.tbl tbody tr:last-child td{ border-bottom:none; }
+.tbl .sortable{ cursor:pointer; user-select:none; }
+.tbl .sortable:hover{ color:var(--text); }
+
+/* ===== Sidebar ===== */
+#sidebar{ width:264px; flex:none; background:var(--sidebar); color:#e9e2dc; display:flex; flex-direction:column;
+  transition:width .22s cubic-bezier(.22,1,.36,1), transform .25s cubic-bezier(.22,1,.36,1); z-index:40; }
+#sidebar.collapsed{ width:76px; }
+#sidebar .nav-label{ transition:opacity .16s ease, width .22s ease; overflow:hidden; white-space:nowrap; }
+#sidebar.collapsed .nav-label{ opacity:0; width:0; pointer-events:none; }
+#sidebar.collapsed .nav-group-title, #sidebar.collapsed .brand-sub, #sidebar.collapsed .nav-badge{ display:none; }
+#sidebar.collapsed .navlink{ justify-content:center; padding-left:0; padding-right:0; }
+.navlink{ position:relative; display:flex; align-items:center; gap:11px; padding:8px 11px; border-radius:10px;
+  color:#e9e2dc; font-size:13.5px; font-weight:500; cursor:pointer; transition:background .14s ease, color .14s ease; }
+.navlink:hover{ background:var(--sidebar-hover); color:#f2f4f3; }
+.navlink.active{ background:var(--sidebar-hover); color:#fff; font-weight:600; }
+.navlink.active::before{ content:""; position:absolute; left:-13px; top:50%; transform:translateY(-50%);
+  width:3.5px; height:20px; border-radius:0 4px 4px 0; background:#a9927d; }
+.nav-badge{ margin-left:auto; font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:99px;
+  background:rgba(255,255,255,.09); color:#f2f4f3; }
+.nav-badge.alert{ background:var(--red); color:#fff; }
+.nav-group-title{ font-size:10px; letter-spacing:.16em; text-transform:uppercase; font-weight:700;
+  color:#a9927d; padding:0 11px; margin:16px 0 6px; }
+
+/* ===== Topbar ===== */
+#topbar{ background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border); }
+.search-wrap{ position:relative; }
+.search-pop{ position:absolute; top:calc(100% + 8px); left:0; width:min(460px,86vw); max-height:380px; overflow:auto;
+  background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); z-index:60; padding:6px; }
+.drop{ background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); }
+.drop-item{ display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:10px; cursor:pointer; font-size:13.5px;
+  transition:background .12s ease; }
+.drop-item:hover{ background:var(--bg); }
+.month-nav{ display:flex; align-items:center; gap:4px; }
+.month-label{ min-width:132px; text-align:center; font-weight:700; font-size:13.5px; letter-spacing:-.01em; }
+.pill{ display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:99px; font-size:12.5px;
+  font-weight:600; background:var(--card); border:1px solid var(--border); white-space:nowrap; }
+.pill b{ font-weight:700; }
+
+/* ===== View / layout ===== */
+#view{ animation:viewIn .28s cubic-bezier(.22,1,.36,1); }
+@keyframes viewIn{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none; } }
+@keyframes popIn{ from{ opacity:0; transform:translateY(10px) scale(.985);} to{ opacity:1; transform:none; } }
+@keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+@keyframes toastIn{ from{ opacity:0; transform:translateX(24px);} to{ opacity:1; transform:none; } }
+.pop{ animation:popIn .22s cubic-bezier(.22,1,.36,1); }
+
+/* ===== Modal ===== */
+#modal-root{ position:fixed; inset:0; z-index:90; display:none; }
+#modal-root.open{ display:block; }
+.modal-overlay{ position:absolute; inset:0; background:rgba(10,9,8,.5); backdrop-filter:blur(3px); animation:fadeIn .18s ease; }
+.modal-panel{ position:relative; margin:5vh auto; width:min(680px,94vw); max-height:88vh; overflow:auto;
+  background:var(--card); border:1px solid var(--border); border-radius:18px; box-shadow:0 30px 70px -30px rgba(10,9,8,.55);
+  animation:popIn .22s cubic-bezier(.22,1,.36,1); }
+.modal-panel.narrow{ width:min(460px,94vw); }
+.tab-btn{ padding:7px 13px; font-size:13px; font-weight:600; border-radius:9px; color:var(--muted); cursor:pointer;
+  border:1px solid transparent; transition:all .14s ease; }
+.tab-btn:hover{ background:var(--bg); color:var(--text); }
+.tab-btn.active{ background:var(--accent); color:var(--accent-text); }
+
+/* ===== Calendar ===== */
+.cal-grid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); border-top:1px solid var(--border); border-left:1px solid var(--border); }
+.cal-cell{ min-height:104px; border-right:1px solid var(--border); border-bottom:1px solid var(--border);
+  padding:7px; background:var(--card); cursor:pointer; transition:background .13s ease; position:relative; overflow:hidden; }
+.cal-cell:hover{ background:var(--bg); }
+.cal-cell.muted{ opacity:.45; }
+.cal-cell.today{ box-shadow:inset 0 0 0 2px var(--accent); }
+.cal-dow{ font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--faint);
+  padding:9px 8px; background:var(--bg); border-right:1px solid var(--border); border-bottom:1px solid var(--border); text-align:center; }
+.cal-daynum{ font-size:12.5px; font-weight:700; color:var(--muted); width:22px; height:22px; display:flex; align-items:center;
+  justify-content:center; border-radius:99px; margin-bottom:4px; }
+.cal-cell.today .cal-daynum{ background:var(--accent); color:var(--accent-text); }
+.cal-ev{ display:flex; align-items:center; gap:5px; font-size:11px; font-weight:600; padding:2.5px 6px;
+  border-radius:6px; margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ===== Toast ===== */
+#toast-root{ position:fixed; right:20px; bottom:20px; z-index:120; display:flex; flex-direction:column; gap:9px; align-items:flex-end; }
+.toast{ display:flex; align-items:center; gap:10px; padding:11px 15px; border-radius:12px; font-size:13.5px; font-weight:600;
+  background:var(--accent); color:var(--accent-text); box-shadow:0 14px 34px -14px rgba(10,9,8,.6);
+  animation:toastIn .26s cubic-bezier(.22,1,.36,1); max-width:min(420px,90vw); }
+.toast.err{ background:var(--red); color:#fff; }
+.toast.ok{ background:var(--green); color:#fff; }
+
+/* ===== Misc ===== */
+.progress-row:hover .progress{ transform:scaleY(1.35); }
+.progress{ transition:transform .18s ease; transform-origin:center; }
+.dropzone{ border:2px dashed var(--border-strong); border-radius:16px; transition:border-color .18s ease, background .18s ease; }
+.dropzone.hot{ border-color:var(--accent); background:var(--accent-soft); }
+.list-row{ display:flex; align-items:center; gap:12px; padding:11px 13px; border:1px solid var(--border);
+  border-radius:12px; background:var(--card); transition:border-color .14s ease, background .14s ease; }
+.list-row:hover{ border-color:var(--border-strong); }
+.muted{ color:var(--muted); } .faint{ color:var(--faint); }
+.avatar-ic{ width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex:none; font-size:13px; font-weight:700; }
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+@media (max-width:1023px){
+  #sidebar{ position:fixed; left:0; top:0; bottom:0; transform:translateX(-102%); width:264px !important; }
+  #sidebar.mobile-open{ transform:translateX(0); box-shadow:0 0 60px rgba(0,0,0,.4); }
+  #sidebar .nav-label{ opacity:1 !important; width:auto !important; }
+  #sidebar .nav-group-title, #sidebar .brand-sub, #sidebar .nav-badge{ display:block !important; }
+  #sidebar .nav-badge{ display:inline-flex !important; }
+}
+#sidebar-backdrop{ position:fixed; inset:0; background:rgba(10,9,8,.5); z-index:39; display:none; }
+#sidebar-backdrop.show{ display:block; animation:fadeIn .18s ease; }
+</style>
+</head>
+<body>
+<div id="app" class="flex h-screen overflow-hidden">
+  <aside id="sidebar" aria-label="Primary navigation"></aside>
+  <div id="sidebar-backdrop"></div>
+  <div class="flex-1 flex flex-col min-w-0">
+    <header id="topbar"></header>
+    <main id="view" class="flex-1 overflow-y-auto"></main>
+  </div>
+</div>
+<div id="modal-root"><div class="modal-overlay" data-action="modal-close"></div><div id="modal-panel" class="modal-panel"></div></div>
+<div id="toast-root" aria-live="polite"></div>
+<input type="file" id="import-file" accept="application/json,.json" hidden>
+
+<script>
+/* ============================================================
+   Personal Finance Manager Pro — single-file application
+   ============================================================ */
+'use strict';
+
+/* ---------- Utils ---------- */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+let _uidSeq = 0;
+const uid = () => Date.now().toString(36) + (_uidSeq++).toString(36);
+const esc = (s='') => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const parseISO = s => { const [y,m,d] = String(s).split('-').map(Number); return new Date(y, (m||1)-1, d||1); };
+const todayISO = () => iso(new Date());
+const dim = (y, m) => new Date(y, m+1, 0).getDate();
+const clampDay = (y, m, day) => Math.min(day, dim(y, m));
+const monthStart = d => new Date(d.getFullYear(), d.getMonth(), 1);
+const addMonths = (d, n) => new Date(d.getFullYear(), d.getMonth()+n, 1);
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const daysBetween = (a, b) => Math.round((parseISO(b) - parseISO(a)) / 86400000);
+const startOfWeek = d => addDays(d, -((d.getDay()+6) % 7));
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MON3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtDate = s => { const d = parseISO(s); return `${MON3[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; };
+const fmtDateShort = s => { const d = parseISO(s); return `${MON3[d.getMonth()]} ${d.getDate()}`; };
+
+function money(n, opts={}){
+  const s = DB.data.settings;
+  const v = Math.abs(Number(n)||0);
+  const neg = (Number(n)||0) < 0;
+  let str;
+  if (s.currency === 'CUSTOM'){
+    str = (s.customSymbol || '$') + v.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+  } else {
+    try { str = new Intl.NumberFormat('en-US',{style:'currency', currency:s.currency, maximumFractionDigits:2}).format(v); }
+    catch(e){ str = '$' + v.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+  }
+  if (opts.signed) return (neg ? '−' : '+') + str;
+  return (neg ? '−' : '') + str;
+}
+const moneyShort = n => {
+  const a = Math.abs(n||0);
+  if (a >= 1000000) return money(Math.sign(n||0) * a/1e6).replace(/(\d)\.\d\d/, '$1') + 'M';
+  if (a >= 10000) return money(Math.sign(n||0) * Math.round(a/100)/10).replace(/\.0$/, '') + 'k';
+  return money(n);
+};
+const pct = (n, dp=0) => (Number.isFinite(n) ? n : 0).toFixed(dp) + '%';
+
+const ICONS = ['wallet','landmark','piggy-bank','credit-card','trending-up','line-chart','receipt','shopping-cart','shopping-bag','utensils','car','home','zap','heart-pulse','film','plane','sparkles','briefcase','laptop','repeat','plus-circle','graduation-cap','gift','dumbbell','coffee','book-open','music','globe','coins','bitcoin','banknote','pen','palette','wrench'];
+const COLOR_SET = ['#49111c','#5e503f','#a9927d','#2f6b4c','#4f7a5e','#8a4a1c','#7a5c2e','#3e6b74','#5a7f8f','#4a4f6b','#6d4a56','#57604f'];
+const ACCOUNT_TYPES = [
+  {id:'checking', label:'Checking', icon:'landmark'},
+  {id:'savings', label:'Savings', icon:'piggy-bank'},
+  {id:'credit', label:'Credit Card', icon:'credit-card'},
+  {id:'investment', label:'Investment', icon:'trending-up'},
+  {id:'loan', label:'Loan', icon:'coins'},
+  {id:'crypto', label:'Crypto', icon:'bitcoin'},
+  {id:'cash', label:'Cash', icon:'banknote'},
+  {id:'custom', label:'Custom', icon:'wallet'}
+];
+const acctType = id => ACCOUNT_TYPES.find(t => t.id === id) || ACCOUNT_TYPES[7];
+
+/* ---------- Icons (Lucide-safe wrapper) ---------- */
+function ic(name, cls='w-4 h-4'){
+  return `<i data-lucide="${name}" class="${cls}"></i>`;
+}
+function icons(root=document){
+  if (window.lucide && window.lucide.createIcons){
+    try { window.lucide.createIcons({ attrs: { 'stroke-width': 1.8 } }); } catch(e){}
+  }
+}
+
+/* ---------- Toasts ---------- */
+function toast(msg, kind=''){
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.innerHTML = `${ic(kind==='err'?'alert-circle':(kind==='ok'?'check-circle-2':'info'),'w-4 h-4 shrink-0')}<span>${esc(msg)}</span>`;
+  $('#toast-root').appendChild(el);
+  icons(el);
+  setTimeout(() => { el.style.transition='opacity .3s ease, transform .3s ease'; el.style.opacity='0'; el.style.transform='translateX(24px)';
+    setTimeout(() => el.remove(), 320); }, 3200);
+}
+
+/* ---------- Sample data ---------- */
+function seedData(){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth(), td = now.getDate();
+
+  const categories = [
+    {id:'cat_groc',  name:'Groceries',   icon:'shopping-cart', color:'#4f7a5e', kind:'expense', need:'need', budget:600},
+    {id:'cat_dine',  name:'Dining',      icon:'utensils',      color:'#8a4a1c', kind:'expense', need:'want', budget:280},
+    {id:'cat_house', name:'Housing',     icon:'home',          color:'#49111c', kind:'expense', need:'need', budget:1850},
+    {id:'cat_util',  name:'Utilities',   icon:'zap',           color:'#3e6b74', kind:'expense', need:'need', budget:240},
+    {id:'cat_trans', name:'Transport',   icon:'car',           color:'#5e503f', kind:'expense', need:'need', budget:300},
+    {id:'cat_health',name:'Health',      icon:'heart-pulse',   color:'#6d4a56', kind:'expense', need:'need', budget:160},
+    {id:'cat_ent',   name:'Entertainment',icon:'film',         color:'#57604f', kind:'expense', need:'want', budget:130},
+    {id:'cat_shop',  name:'Shopping',    icon:'shopping-bag',  color:'#a35a2a', kind:'expense', need:'want', budget:300},
+    {id:'cat_sub',   name:'Subscriptions',icon:'repeat',       color:'#4a4f6b', kind:'expense', need:'want', budget:120},
+    {id:'cat_trav',  name:'Travel',      icon:'plane',         color:'#5a7f8f', kind:'expense', need:'want', budget:250},
+    {id:'cat_pers',  name:'Personal',    icon:'sparkles',      color:'#a9927d', kind:'expense', need:'want', budget:120},
+    {id:'cat_edu',   name:'Education',   icon:'graduation-cap',color:'#7a5c2e', kind:'expense', need:'need', budget:150},
+    {id:'inc_sal',   name:'Salary',      icon:'briefcase',     color:'#2f6b4c', kind:'income',  need:null, budget:null},
+    {id:'inc_free',  name:'Freelance',   icon:'laptop',        color:'#3e6b74', kind:'income',  need:null, budget:null},
+    {id:'inc_inv',   name:'Investments', icon:'trending-up',   color:'#57604f', kind:'income',  need:null, budget:null},
+    {id:'inc_oth',   name:'Other Income',icon:'plus-circle',   color:'#a9927d', kind:'income',  need:null, budget:null}
+  ];
+
+  const accounts = [
+    {id:'acc_chk',  name:'Everyday Checking', institution:'Chase Bank',     type:'checking',   balance:4280.50,  emergency:false},
+    {id:'acc_save', name:'High-Yield Savings', institution:'Ally Financial', type:'savings',    balance:15200.00, emergency:true},
+    {id:'acc_card', name:'Amex Gold Card',     institution:'American Express', type:'credit',   balance:-1240.75, emergency:false},
+    {id:'acc_invs', name:'Brokerage Account',  institution:'Fidelity',       type:'investment', balance:38450.00, emergency:false},
+    {id:'acc_loan', name:'Auto Loan',          institution:'Capital One',    type:'loan',       balance:-9800.00, emergency:false},
+    {id:'acc_cryp', name:'Crypto Vault',       institution:'Coinbase',       type:'crypto',     balance:2350.00,  emergency:false},
+    {id:'acc_cash', name:'Wallet Cash',        institution:'Personal',       type:'cash',       balance:320.00,   emergency:false}
+  ];
+
+  // Deterministic monthly ledger — fixed dates, merchants and amounts (no randomness).
+  // Current month only includes days that have already elapsed.
+  const monthlyLedger = [
+    // incomes
+    [1,  'Acme Corp — Payroll',            'inc_sal',  5200.00, 'acc_chk',  ['recurring']],
+    [14, 'Northwind Studio — Retainer',     'inc_free',  850.00, 'acc_chk',  ['work']],
+    [15, 'Fidelity Dividend Payout',        'inc_inv',    86.40, 'acc_invs', []],
+    // expenses
+    [2,  'Whole Foods Market',             'cat_groc',   118.60, 'acc_chk',  []],
+    [3,  'Shell Station',                  'cat_trans',   52.40, 'acc_card', []],
+    [4,  'Chipotle',                       'cat_dine',    18.75, 'acc_card', []],
+    [5,  'Pacific Gas & Electric',         'cat_util',    84.20, 'acc_chk',  ['recurring']],
+    [6,  'Netflix Premium',                'cat_sub',     15.49, 'acc_card', ['recurring']],
+    [7,  "Trader Joe's",                   'cat_groc',    74.35, 'acc_chk',  []],
+    [8,  'AMC Theatres',                   'cat_ent',     32.00, 'acc_card', []],
+    [9,  'Uber — Downtown',                'cat_trans',   16.80, 'acc_card', []],
+    [10, 'Target',                         'cat_shop',    64.22, 'acc_card', []],
+    [11, 'Spotify Duo',                    'cat_sub',     11.99, 'acc_card', ['recurring']],
+    [12, 'Blue Bottle Coffee',             'cat_dine',     9.50, 'acc_chk',  []],
+    [13, 'CVS Pharmacy',                   'cat_health',  28.40, 'acc_chk',  []],
+    [16, 'Whole Foods Market',             'cat_groc',    96.15, 'acc_chk',  []],
+    [17, 'Comcast Xfinity',                'cat_util',    64.99, 'acc_card', ['recurring']],
+    [18, 'Amazon',                         'cat_shop',    57.90, 'acc_card', []],
+    [19, 'Metro Transit Pass',             'cat_trans',   42.00, 'acc_chk',  ['work']],
+    [20, 'Sephora',                        'cat_pers',    45.00, 'acc_card', []],
+    [21, 'Olive Garden',                   'cat_dine',    63.40, 'acc_card', []],
+    [22, 'Coursera Course',                'cat_edu',     49.00, 'acc_chk',  []],
+    [23, 'Home Depot',                     'cat_house',   87.13, 'acc_chk',  []],
+    [24, 'Planet Fitness',                 'cat_pers',    39.99, 'acc_chk',  ['recurring']],
+    [25, 'Costco Wholesale',               'cat_groc',   142.70, 'acc_chk',  []],
+    [26, 'Steam',                          'cat_ent',     24.99, 'acc_card', []],
+    [27, 'Sweetgreen',                     'cat_dine',    15.45, 'acc_card', []],
+    [28, 'Walgreens',                      'cat_health',  22.30, 'acc_chk',  []],
+    [29, 'Airbnb — Coast Trip',            'cat_trav',   268.00, 'acc_card', ['vacation']],
+    [30, 'Uniqlo',                         'cat_shop',    78.90, 'acc_card', []]
+  ];
+
+  const txns = [];
+  let seedN = 0;
+  const pushTx = t => txns.push(Object.assign({id:'seed' + (seedN++)}, t));
+
+  // Replicate the ledger over the last 5 months (current month truncated to today)
+  for (let back = 4; back >= 0; back--){
+    const d = addMonths(monthStart(now), -back);
+    const yy = d.getFullYear(), mm = d.getMonth();
+    const maxDay = (back === 0) ? td : dim(yy, mm);
+    monthlyLedger.forEach(([day, desc, categoryId, amount, accountId, tags]) => {
+      if (day > maxDay) return;
+      pushTx({date: iso(new Date(yy, mm, day)), desc, categoryId, amount, accountId,
+        type: categoryId.startsWith('inc_') ? 'income' : 'expense', tags: tags.slice()});
+    });
+  }
+  txns.sort((a,b) => a.date < b.date ? 1 : -1);
+
+  const bills = [
+    {id:'bill_rent',  name:'Apartment Rent',     amount:1850.00, dueDay:1,  categoryId:'cat_house', accountId:'acc_chk',  autopay:true},
+    {id:'bill_elec',  name:'Electricity — PG&E',  amount:96.40,  dueDay:8,  categoryId:'cat_util',  accountId:'acc_chk',  autopay:false},
+    {id:'bill_int',   name:'Internet — Comcast', amount:64.99,  dueDay:12, categoryId:'cat_util',  accountId:'acc_card', autopay:true},
+    {id:'bill_water', name:'City Water',         amount:42.15,  dueDay:15, categoryId:'cat_util',  accountId:'acc_chk',  autopay:true},
+    {id:'bill_phone', name:'Mobile Phone',       amount:55.00,  dueDay:18, categoryId:'cat_util',  accountId:'acc_card', autopay:true},
+    {id:'bill_gym',   name:'Planet Fitness',     amount:39.99,  dueDay:20, categoryId:'cat_pers',  accountId:'acc_chk',  autopay:true},
+    {id:'bill_ins',   name:'Auto Insurance',     amount:128.00, dueDay:22, categoryId:'cat_trans', accountId:'acc_chk',  autopay:false},
+    {id:'bill_loan',  name:'Student Loan',       amount:210.00, dueDay:25, categoryId:'cat_edu',   accountId:'acc_chk',  autopay:true}
+  ];
+  // Deterministic paid state: bills already due this month are settled, except the
+  // electricity bill, which carries a deliberate overdue demo state once its day passes.
+  const key = `${y}-${m}`;
+  bills.forEach(b => {
+    b.paidPeriods = (b.dueDay < td && b.id !== 'bill_elec') ? [key] : [];
+  });
+
+  const subscriptions = [
+    {id:'sub_net',  name:'Netflix Premium',    amount:15.49, cycle:'monthly', next: iso(new Date(y, m, clampDay(y,m,6))),  categoryId:'cat_ent', active:true, reminder:true},
+    {id:'sub_spot', name:'Spotify Duo',        amount:11.99, cycle:'monthly', next: iso(new Date(y, m, clampDay(y,m,11))), categoryId:'cat_sub', active:true, reminder:false},
+    {id:'sub_ic',   name:'iCloud+ 2TB',        amount:9.99,  cycle:'monthly', next: iso(new Date(y, m, clampDay(y,m,14))), categoryId:'cat_sub', active:true, reminder:false},
+    {id:'sub_yt',   name:'YouTube Premium',    amount:13.99, cycle:'monthly', next: iso(new Date(y, m, clampDay(y,m,17))), categoryId:'cat_sub', active:true, reminder:true},
+    {id:'sub_adbe', name:'Adobe Creative Cloud',amount:59.99, cycle:'monthly', next: iso(new Date(y, m, clampDay(y,m,21))), categoryId:'cat_sub', active:true, reminder:false},
+    {id:'sub_figma',name:'Figma Professional', amount:15.00, cycle:'monthly', next: iso(addDays(now, 4)), categoryId:'cat_sub', active:true, reminder:true, trialEnd: iso(addDays(now, 4))},
+    {id:'sub_amzn', name:'Amazon Prime',       amount:139.00, cycle:'annual', next: iso(new Date(y, 8, 15)), categoryId:'cat_shop', active:true, reminder:true},
+    {id:'sub_notion',name:'Notion Plus',       amount:96.00, cycle:'annual', next: iso(new Date(y, 10, 2)), categoryId:'cat_sub', active:true, reminder:false}
+  ];
+
+  const goals = [
+    {id:'goal_ef',   name:'Emergency Fund', target:20000, saved:15200, color:'#2f6b4c'},
+    {id:'goal_vac',  name:'Summer Vacation', target:3000, saved:850, color:'#8a4a1c'},
+    {id:'goal_lap',  name:'New Laptop', target:2400, saved:1400, color:'#4a4f6b'}
+  ];
+
+  return {
+    version: 1,
+    settings: {
+      currency:'USD', customSymbol:'$', budgetStartDay:1, theme:'light',
+      tags:['recurring','work','personal','vacation','reimbursable']
+    },
+    accounts, categories, transactions: txns, bills, subscriptions, goals
+  };
+}
+
+/* ---------- Persistent state ---------- */
+const STORAGE_KEY = 'PFM_PRO_DATA_v1';
+
+const DB = {
+  data: null,
+  load(){
+    let raw = null;
+    try { raw = localStorage.getItem(STORAGE_KEY); } catch(e){}
+    if (raw){
+      try {
+        const parsed = JSON.parse(raw);
+        if (this.validate(parsed)){ this.data = this.normalize(parsed); return; }
+      } catch(e){}
+    }
+    this.data = this.seed();
+    this.save();
+  },
+  seed(){ const d = seedData(); this.data = d; return d; },
+  save(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); }
+    catch(e){ toast('Storage failed — data not saved', 'err'); }
+  },
+  validate(d){
+    if (!d || typeof d !== 'object') return false;
+    const ok = ['settings','accounts','categories','transactions','bills','subscriptions'];
+    return ok.every(k => Object.prototype.hasOwnProperty.call(d, k));
+  },
+  normalize(d){
+    const s = d.settings || {};
+    return {
+      version: 1,
+      settings: Object.assign({currency:'USD', customSymbol:'$', budgetStartDay:1, theme:'light', tags:[]}, s),
+      accounts: d.accounts || [],
+      categories: d.categories || [],
+      transactions: d.transactions || [],
+      bills: d.bills || [],
+      subscriptions: d.subscriptions || [],
+      goals: d.goals || [],
+      tasks: d.tasks || []
+    };
+  },
+  reset(withDemo=true){
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+    this.data = withDemo ? seedData() : this.normalize({});
+    this.save();
+  }
+};
+
+/* ---------- UI state ---------- */
+const UI = {
+  view: 'dashboard',
+  month: monthStart(new Date()),   // cursor month for all period metrics
+  sidebarCollapsed: false,
+  sidebarMobileOpen: false,
+  quickTab: 'transaction',
+  searchOpen: false, searchQ: '', notifOpen: false,
+  tx: { q:'', cat:'all', acc:'all', type:'all', range:'month', from:'', to:'', sort:'date', dir:'desc', page:1, sel:new Set() },
+  acctQ: '',
+  incQ: '', expQ: ''
+};
+
+/* ---------- Lookups ---------- */
+const cat = id => DB.data.categories.find(c => c.id === id);
+const acct = id => DB.data.accounts.find(a => a.id === id);
+const catName = id => (cat(id) || {name:'Uncategorized'}).name;
+
+/* ---------- Period helpers (budget cycle aware) ---------- */
+function periodRange(cursor){
+  const sd = clamp(DB.data.settings.budgetStartDay || 1, 1, 31);
+  const y = cursor.getFullYear(), m = cursor.getMonth();
+  const start = new Date(y, m, clampDay(y, m, sd));
+  const end = new Date(y, m+1, clampDay(y, m+1, sd));
+  return { start, end, startISO: iso(start), endISO: iso(end) };
+}
+const inRange = (dateStr, start, end) => dateStr >= iso(start) && dateStr < iso(end);
+const periodTx = cursor => {
+  const {start, end} = periodRange(cursor);
+  return DB.data.transactions.filter(t => inRange(t.date, start, end));
+};
+function isCurrentPeriod(cursor){
+  const {start, end} = periodRange(cursor);
+  const now = new Date();
+  return now >= start && now < end;
+}
+function daysElapsedInPeriod(){
+  const {start, end} = periodRange(UI.month);
+  const now = new Date();
+  const nowClamped = now < end ? now : end;
+  return Math.max(1, Math.ceil((nowClamped - start) / 86400000));
+}
+const periodDays = cursor => {
+  const {start, end} = periodRange(cursor);
+  return Math.max(1, Math.round((end - start) / 86400000));
+};
+const dayKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+
+/* ---------- Bills / subscriptions ---------- */
+function billDueDate(b, cursor){
+  const c = cursor || UI.month;
+  return new Date(c.getFullYear(), c.getMonth(), clampDay(c.getFullYear(), c.getMonth(), b.dueDay || 1));
+}
+function billPaid(b, cursor = UI.month){ return (b.paidPeriods || []).includes(dayKey(cursor)); }
+function billStatus(b, cursor = UI.month){
+  if (billPaid(b, cursor)) return 'paid';
+  const due = billDueDate(b, cursor), now = new Date();
+  if (due < new Date(now.getFullYear(), now.getMonth(), now.getDate())) return 'overdue';
+  const diff = Math.round((due - now) / 86400000);
+  if (diff <= 5) return 'due-soon';
+  return 'upcoming';
+}
+function subMonthly(s){
+  if (s.cycle === 'annual') return s.amount / 12;
+  if (s.cycle === 'weekly') return s.amount * 4.33;
+  return s.amount;
+}
+const activeSubs = () => DB.data.subscriptions.filter(s => s.active);
+
+/* ---------- Metrics (computed getters) ---------- */
+function metrics(){
+  const cur = UI.month;
+  const now = new Date();
+  const tx = periodTx(cur);
+  const prevTx = periodTx(addMonths(cur, -1));
+
+  const income = tx.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+  const expense = tx.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+  const net = income - expense;
+
+  const cats = DB.data.categories;
+  const budgetTotal = cats.reduce((s,c) => s + (c.budget || 0), 0);
+  const budgetSpent = cats.reduce((s,c) => s + tx.filter(t => t.type === 'expense' && t.categoryId === c.id)
+    .reduce((x,t) => x + t.amount, 0), 0);
+  const budgetLeft = budgetTotal - budgetSpent;
+
+  const accounts = DB.data.accounts;
+  const assets = accounts.filter(a => a.balance > 0).reduce((s,a) => s + a.balance, 0);
+  const liabilities = Math.abs(accounts.filter(a => a.balance < 0).reduce((s,a) => s + a.balance, 0));
+  const netWorth = assets - liabilities;
+  const cashAccounts = accounts.filter(a => a.type === 'checking' || a.type === 'cash').reduce((s,a) => s + a.balance, 0);
+  const creditBal = Math.abs(accounts.filter(a => a.type === 'credit').reduce((s,a) => s + a.balance, 0));
+  const savingsInv = accounts.filter(a => a.type === 'savings' || a.type === 'investment').reduce((s,a) => s + a.balance, 0);
+  const emergency = accounts.filter(a => a.emergency).reduce((s,a) => s + a.balance, 0);
+
+  const subs = activeSubs();
+  const subCost = subs.reduce((s,x) => s + subMonthly(x), 0);
+
+  const nowKey = dayKey(now);
+  const billsNow = DB.data.bills;
+  const unpaidNow = billsNow.filter(b => !(b.paidPeriods||[]).includes(nowKey));
+  const overdueBills = unpaidNow.filter(b => {
+    const due = new Date(now.getFullYear(), now.getMonth(), clampDay(now.getFullYear(), now.getMonth(), b.dueDay||1));
+    return due < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  });
+  const upcoming30 = billsNow.filter(b => {
+    const due = new Date(now.getFullYear(), now.getMonth(), clampDay(now.getFullYear(), now.getMonth(), b.dueDay||1));
+    const diff = Math.round((due - now) / 86400000);
+    return diff >= 0 && diff <= 30;
+  });
+
+  const needs = tx.filter(t => t.type === 'expense' && (cat(t.categoryId)||{}).need === 'need')
+    .reduce((s,t) => s + t.amount, 0);
+  const wants = tx.filter(t => t.type === 'expense' && (cat(t.categoryId)||{}).need === 'want')
+    .reduce((s,t) => s + t.amount, 0);
+
+  const goals = DB.data.goals || [];
+  const goalsInProgress = goals.filter(g => g.saved < g.target).length;
+
+  return {
+    income, expense, net,
+    budgetTotal, budgetSpent, budgetLeft,
+    assets, liabilities, netWorth, cashAccounts, creditBal, savingsInv, emergency,
+    subMonthly: subCost, subAnnual: subCost * 12,
+    billsDueCount: unpaidNow.length,
+    billsTotalMonth: billsNow.reduce((s,b) => s + b.amount, 0),
+    billsPaidCount: billsNow.length - unpaidNow.length,
+    billsUnpaidCount: unpaidNow.length,
+    billsPaidAmount: billsNow.filter(b => !unpaidNow.includes(b)).reduce((s,b) => s + b.amount, 0),
+    overdueAmount: overdueBills.reduce((s,b) => s + b.amount, 0),
+    overdueCount: overdueBills.length,
+    upcomingBillsCount: upcoming30.length,
+    debtRemaining: liabilities,
+    savingsRate: income > 0 ? (net / income) * 100 : 0,
+    budgetUsed: budgetTotal > 0 ? (budgetSpent / budgetTotal) * 100 : 0,
+    goalsInProgress,
+    needs, wants,
+    prevIncome: prevTx.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0),
+    prevExpense: prevTx.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0),
+    tx
+  };
+}
+
+/* ---------- Needs attention ---------- */
+function attentionItems(){
+  const items = [];
+  const now = new Date(), todayISOs = iso(now);
+  DB.data.bills.forEach(b => {
+    const due = billDueDate(b, monthStart(now));
+    const dueISO = iso(due);
+    if (!billPaid(b, monthStart(now))){
+      const diff = daysBetween(todayISOs, dueISO);
+      if (diff < 0) items.push({level:'overdue', color:'var(--red)', title:`${b.name} is overdue`,
+        sub:`${money(b.amount)} was due ${Math.abs(diff)} day${Math.abs(diff)===1?'':'s'} ago`, view:'bills'});
+      else if (diff <= 5) items.push({level:'due-soon', color:'var(--amber)', title:`${b.name} due ${diff === 0 ? 'today' : 'in ' + diff + ' day' + (diff===1?'':'s')}`,
+        sub:`${money(b.amount)} · ${due.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`, view:'bills'});
+    }
+  });
+  activeSubs().forEach(s => {
+    const diff = daysBetween(todayISOs, s.next);
+    if (s.trialEnd && diff >= 0 && diff <= 7)
+      items.push({level:'alert', color:'var(--amber)', title:`${s.name} trial ends ${diff===0?'today':'soon'}`,
+        sub:`Charges ${money(s.amount)} on ${fmtDateShort(s.next)}`, view:'subscriptions'});
+    else if (diff === 0)
+      items.push({level:'due-soon', color:'var(--amber)', title:`${s.name} renews today`, sub:`${money(s.amount)} ${s.cycle}`, view:'subscriptions'});
+  });
+  DB.data.categories.filter(c => c.budget > 0).forEach(c => {
+    const spent = periodTx(UI.month).filter(t => t.type === 'expense' && t.categoryId === c.id)
+      .reduce((s,t) => s + t.amount, 0);
+    const p = (spent / c.budget) * 100;
+    if (p >= 100) items.push({level:'overdue', color:'var(--red)', title:`${c.name} budget exceeded`,
+      sub:`${pct(p)} used — ${money(spent - c.budget)} over`, view:'budgets'});
+    else if (p >= 75) items.push({level:'due-soon', color:'var(--amber)', title:`${c.name} budget at ${pct(p)}`,
+      sub:`${money(c.budget - spent)} left of ${money(c.budget)}`, view:'budgets'});
+  });
+  const order = {overdue:0, 'due-soon':1, alert:2};
+  return items.sort((a,b) => order[a.level] - order[b.level]);
+}
+
+/* ---------- Calendar events ---------- */
+function eventsFor(dateISO){
+  const ev = [];
+  const d = parseISO(dateISO);
+  DB.data.transactions.filter(t => t.date === dateISO).slice(0, 40).forEach(t => {
+    ev.push({kind: t.type === 'income' ? 'income' : (t.type === 'expense' ? 'expense' : 'transfer'),
+      label: (t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '→') + ' ' + t.desc, amount: t.amount, ref:{type:'tx', id:t.id}});
+  });
+  const inPeriod = dayKey(d) === dayKey(UI.month);
+  DB.data.bills.filter(b => clampDay(d.getFullYear(), d.getMonth(), b.dueDay||1) === d.getDate()).forEach(b => {
+    const paid = (b.paidPeriods||[]).includes(dayKey(d));
+    ev.push({kind: paid ? 'bill-paid' : 'bill', label: '▸ ' + b.name, amount: b.amount, ref:{type:'bill', id:b.id}});
+  });
+  activeSubs().filter(s => s.next === dateISO).forEach(s => {
+    ev.push({kind:'sub', label:'◆ ' + s.name, amount: s.amount, ref:{type:'sub', id:s.id}});
+  });
+  return ev;
+}
+const EV_STYLE = {
+  income:      {bg:'var(--green-soft)', fg:'var(--green)'},
+  expense:     {bg:'var(--red-soft)',   fg:'var(--red)'},
+  transfer:    {bg:'var(--accent-soft)',  fg:'var(--muted)'},
+  bill:        {bg:'var(--amber-soft)', fg:'var(--amber)'},
+  'bill-paid': {bg:'var(--green-soft)', fg:'var(--green)'},
+  sub:         {bg:'var(--accent-soft)',  fg:'var(--text)'}
+};
+
+/* ---------- Chart engine (canvas) ---------- */
+function ctx2d(cv){
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth || cv.parentElement.clientWidth || 300;
+  const h = cv.clientHeight || 180;
+  cv.width = Math.max(1, Math.round(w * dpr));
+  cv.height = Math.max(1, Math.round(h * dpr));
+  const c = cv.getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, w, h);
+  return {c, w, h};
+}
+function cssVar(name, fallback=''){
+  return (getComputedStyle(document.documentElement).getPropertyValue(name) || fallback).trim() || fallback;
+}
+function chartLine(cv, labels, series, opts={}){
+  if (!cv) return;
+  const {c, w, h} = ctx2d(cv);
+  const padL = 44, padR = opts.endLabels ? 96 : 12, padT = 14, padB = 26;
+  const all = series.flatMap(s => s.data);
+  let max = Math.max(...all, 1), min = Math.min(...all, 0);
+  if (min > 0) min = 0;
+  const range = (max - min) || 1;
+  max += range * 0.12; min -= range * 0.08;
+  const X = i => padL + (i / Math.max(1, labels.length - 1)) * (w - padL - padR);
+  const Y = v => padT + (1 - (v - min) / (max - min)) * (h - padT - padB);
+  const muted = cssVar('--faint', '#999');
+  c.font = "10.5px Inter, sans-serif"; c.fillStyle = muted;
+  for (let g = 0; g <= 4; g++){
+    const v = min + (max - min) * (g / 4);
+    const y = Y(v);
+    c.strokeStyle = cssVar('--grid-line', '#eee'); c.lineWidth = 1;
+    c.beginPath(); c.moveTo(padL, y); c.lineTo(w - padR, y); c.stroke();
+    c.textAlign = 'right'; c.textBaseline = 'middle';
+    c.fillText(moneyShort(v), padL - 8, y);
+  }
+  c.textAlign = 'center'; c.textBaseline = 'top';
+  labels.forEach((l, i) => c.fillText(l, X(i), h - padB + 8));
+  series.forEach(s => {
+    const pts = s.data.map((v, i) => [X(i), Y(v)]);
+    if (s.fill){
+      const grad = c.createLinearGradient(0, padT, 0, h - padB);
+      grad.addColorStop(0, s.color + '33'); grad.addColorStop(1, s.color + '00');
+      c.beginPath(); c.moveTo(pts[0][0], h - padB);
+      pts.forEach(p => c.lineTo(p[0], p[1]));
+      c.lineTo(pts[pts.length-1][0], h - padB); c.closePath();
+      c.fillStyle = grad; c.fill();
+    }
+    c.beginPath();
+    pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
+    c.strokeStyle = s.color; c.lineWidth = 2.4; c.lineJoin = 'round'; c.lineCap = 'round'; c.stroke();
+    pts.forEach(p => {
+      c.beginPath(); c.arc(p[0], p[1], 3.4, 0, Math.PI*2);
+      c.fillStyle = cssVar('--card', '#fff'); c.fill();
+      c.lineWidth = 2; c.strokeStyle = s.color; c.stroke();
+    });
+  });
+  if (opts.endLabels){
+    // Editorial direct labels at the line ends — replaces legends
+    const placed = [];
+    series.forEach(s => {
+      const li = s.data.length - 1;
+      let y = Y(s.data[li]);
+      while (placed.some(py => Math.abs(py - y) < 15)) y += 15;
+      placed.push(y);
+      c.textAlign = 'left'; c.textBaseline = 'middle';
+      c.font = "600 11px Inter, sans-serif";
+      c.fillStyle = s.color;
+      c.fillText(`${s.name || ''} ${moneyShort(s.data[li])}`.trim(), X(li) + 9, y);
+    });
+  }
+}
+function chartDonut(cv, items, centerLabel='', centerValue=''){
+  if (!cv) return;
+  const {c, w, h} = ctx2d(cv);
+  const total = items.reduce((s,i) => s + i.value, 0) || 1;
+  const cx = w/2, cy = h/2;
+  const r = Math.min(w, h)/2 - 6, r2 = r * 0.64;
+  let a = -Math.PI/2;
+  items.forEach(i => {
+    const ang = (i.value / total) * Math.PI * 2;
+    c.beginPath(); c.arc(cx, cy, r, a, a + ang); c.arc(cx, cy, r2, a + ang, a, true); c.closePath();
+    c.fillStyle = i.color; c.fill();
+    a += ang;
+  });
+  if (centerValue){
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = cssVar('--text', '#222'); c.font = "700 17px Inter, sans-serif";
+    c.fillText(centerValue, cx, cy - 4);
+    c.fillStyle = cssVar('--faint', '#999'); c.font = "600 10px Inter, sans-serif";
+    c.fillText(centerLabel.toUpperCase(), cx, cy + 14);
+  }
+}
+function chartBars(cv, labels, series, opts={}){
+  if (!cv) return;
+  const {c, w, h} = ctx2d(cv);
+  const padL = 44, padR = 10, padT = 12, padB = 26;
+  const max = Math.max(1, ...series.flatMap(s => s.data));
+  const groupW = (w - padL - padR) / Math.max(1, labels.length);
+  const barW = Math.min(opts.barWidth || 18, (groupW - 8) / series.length);
+  const muted = cssVar('--faint', '#999');
+  c.font = "10.5px Inter, sans-serif"; c.fillStyle = muted;
+  for (let g = 0; g <= 3; g++){
+    const v = (max / 3) * g;
+    const y = padT + (1 - g/3) * (h - padT - padB);
+    c.strokeStyle = cssVar('--grid-line', '#eee'); c.lineWidth = 1;
+    c.beginPath(); c.moveTo(padL, y); c.lineTo(w - padR, y); c.stroke();
+    c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillText(moneyShort(v), padL - 8, y);
+  }
+  labels.forEach((l, i) => {
+    const gx = padL + groupW * i + groupW/2;
+    series.forEach((s, j) => {
+      const v = s.data[i] || 0;
+      const bh = (v / max) * (h - padT - padB);
+      const x = gx - (series.length * barW)/2 + j * barW;
+      const y = h - padB - bh;
+      c.fillStyle = s.color;
+      const r = Math.min(4, barW/2, Math.max(0, bh/2));
+      c.beginPath();
+      if (c.roundRect) { c.roundRect(x+1, y, barW-2, Math.max(bh, v > 0 ? 2 : 0), r); }
+      else { c.rect(x+1, y, barW-2, Math.max(bh, v > 0 ? 2 : 0)); }
+      c.fill();
+    });
+    c.textAlign = 'center'; c.textBaseline = 'top';
+    c.fillStyle = muted;
+    const label = String(l).length > 9 ? String(l).slice(0,8) + '…' : String(l);
+    c.fillText(label, gx, h - padB + 8);
+  });
+}
+/* ---------- Shared UI helpers ---------- */
+function kpiTile(label, value, sub, iconName, tone='neutral'){
+  const tones = {
+    neutral:'', green:'color:var(--green)', red:'color:var(--red)', amber:'color:var(--amber)'
+  };
+  return `<div class="kpi">
+    <div class="flex items-start justify-between gap-2">
+      <div class="eyebrow leading-snug">${esc(label)}</div>
+      <span style="${tones[tone]||'color:var(--faint)'}" class="shrink-0 opacity-80">${ic(iconName,'w-3.5 h-3.5')}</span>
+    </div>
+    <div class="mt-2 stat-value tnum ${tone==='green'?'':''}" style="${tones[tone]||''}">${value}</div>
+    ${sub ? `<div class="mt-1 text-[11.5px] muted">${sub}</div>` : ''}
+  </div>`;
+}
+function sectionHead(title, rightHtml=''){
+  return `<div class="section-head">
+    <h2 class="section-title">${title}</h2><span class="section-rule"></span>${rightHtml ? `<span class="section-meta">${rightHtml}</span>` : ''}</div>`;
+}
+function emptyState(text, icon='inbox'){
+  return `<div class="text-center py-10 px-4">
+    <div class="faint mx-auto mb-3 w-10 h-10 flex items-center justify-center rounded-xl" style="background:var(--bg);border:1px solid var(--border)">${ic(icon,'w-5 h-5')}</div>
+    <p class="muted text-[13px]">${esc(text)}</p></div>`;
+}
+function budgetBar(spent, total){
+  if (!total) return '';
+  const p = (spent/total)*100;
+  const color = p > 100 ? 'var(--red)' : (p >= 75 ? 'var(--amber)' : 'var(--green)');
+  return `<div class="progress-row"><div class="progress"><span style="width:${clamp(p,0,100)}%;background:${color}"></span></div></div>`;
+}
+function needBadge(c){
+  if (!c || !c.need) return '';
+  return c.need === 'need'
+    ? `<span class="badge badge-green">Need</span>`
+    : `<span class="badge badge-amber">Want</span>`;
+}
+function txSignColor(t){ return t.type === 'income' ? 'var(--green)' : (t.type === 'expense' ? 'var(--red)' : 'var(--muted)'); }
+function txAmount(t){
+  const s = t.type === 'income' ? '+' : (t.type === 'expense' ? '−' : '↔ ');
+  return `<span class="tnum font-semibold" style="color:${txSignColor(t)}">${s}${money(t.amount)}</span>`;
+}
+function accountIcon(a, size='w-4 h-4'){
+  const t = acctType(a.type);
+  return ic(t.icon, size);
+}
+function filteredTxList(){ return DB.data.transactions; }
+
+/* ---------- Sidebar ---------- */
+const NAV = [
+  {group:'Overview', items:[
+    {id:'dashboard', label:'Dashboard', icon:'layout-dashboard'},
+    {id:'today', label:'Today', icon:'sun'},
+    {id:'calendar', label:'Calendar', icon:'calendar-days'}
+  ]},
+  {group:'Money', items:[
+    {id:'accounts', label:'Accounts', icon:'wallet'},
+    {id:'transactions', label:'Transactions', icon:'arrow-left-right'},
+    {id:'income', label:'Income', icon:'trending-up'},
+    {id:'expenses', label:'Expenses', icon:'trending-down'}
+  ]},
+  {group:'Budgeting', items:[
+    {id:'budgets', label:'Budget Categories', icon:'target'},
+    {id:'spending', label:'Spending Tracker', icon:'activity'}
+  ]},
+  {group:'Obligations', items:[
+    {id:'bills', label:'Bills', icon:'receipt'},
+    {id:'subscriptions', label:'Subscriptions', icon:'repeat'},
+    {id:'billcalendar', label:'Bill Calendar', icon:'calendar-clock'}
+  ]},
+  {group:'System', items:[
+    {id:'settings', label:'Settings', icon:'settings'},
+    {id:'data', label:'Data & Backup', icon:'database'}
+  ]}
+];
+function navBadge(id){
+  const today = todayISO();
+  switch(id){
+    case 'today': { const n = DB.data.transactions.filter(t => t.date === today).length;
+      return n ? {n, alert:false} : null; }
+    case 'calendar': { const n = eventsFor(today).length; return n ? {n, alert:false} : null; }
+    case 'accounts': return {n: DB.data.accounts.length, alert:false};
+    case 'transactions': return {n: DB.data.transactions.length, alert:false};
+    case 'income': { const n = new Set(DB.data.transactions.filter(t => t.type==='income').map(t => t.categoryId)).size;
+      return {n, alert:false}; }
+    case 'expenses': { const n = periodTx(UI.month).filter(t => t.type==='expense').length; return n ? {n, alert:false} : null; }
+    case 'budgets': { const over = DB.data.categories.filter(c => {
+        const spent = periodTx(UI.month).filter(t => t.type==='expense' && t.categoryId===c.id).reduce((s,t)=>s+t.amount,0);
+        return c.budget > 0 && spent >= c.budget * 0.75; }).length;
+      return over ? {n: over, alert: true} : null; }
+    case 'bills': { const unpaid = DB.data.bills.filter(b => !(b.paidPeriods||[]).includes(dayKey(new Date()))).length;
+      return unpaid ? {n: unpaid, alert: false} : null; }
+    case 'subscriptions': return {n: activeSubs().length, alert:false};
+    case 'billcalendar': { const n = DB.data.bills.length + activeSubs().length; return {n, alert:false}; }
+    default: return null;
+  }
+}
+function renderSidebar(){
+  const sb = $('#sidebar');
+  sb.classList.toggle('collapsed', UI.sidebarCollapsed && !UI.sidebarMobileOpen);
+  sb.classList.toggle('mobile-open', UI.sidebarMobileOpen);
+  $('#sidebar-backdrop').classList.toggle('show', UI.sidebarMobileOpen);
+  const brand = `
+    <div class="flex items-center gap-3 px-4 pt-5 pb-4">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+           style="background:linear-gradient(145deg,#a9927d,#d8c6b1);color:#0a0908">${ic('landmark','w-5 h-5')}</div>
+      <div class="nav-label brand-sub min-w-0">
+        <div class="font-bold text-[14.5px] leading-tight text-white tracking-tight">Finance Manager</div>
+        <div class="text-[10.5px] font-semibold tracking-[.14em] uppercase" style="color:#a9927d">Pro Edition</div>
+      </div>
+    </div>`;
+  const groups = NAV.map(g => `
+    <div class="nav-group-title">${g.group}</div>
+    <nav class="px-3 flex flex-col gap-1">
+      ${g.items.map(it => {
+        const active = UI.view === it.id;
+        const b = navBadge(it.id);
+        return `<a class="navlink ${active ? 'active' : ''}" data-action="nav" data-view="${it.id}" title="${esc(it.label)}">
+          ${ic(it.icon,'w-4 h-4 shrink-0')}
+          <span class="nav-label">${esc(it.label)}</span>
+          ${b ? `<span class="nav-badge nav-label ${b.alert ? 'alert' : ''}">${b.n}</span>` : ''}
+        </a>`;
+      }).join('')}
+    </nav>`).join('');
+  const footer = `
+    <div class="mt-auto p-3">
+      <button class="navlink w-full" data-action="collapse-sidebar" title="Collapse sidebar">
+        ${ic(UI.sidebarCollapsed ? 'panel-left-open' : 'panel-left-close','w-4 h-4 shrink-0')}
+        <span class="nav-label">Collapse</span>
+      </button>
+    </div>`;
+  sb.innerHTML = brand + `<div class="flex-1 overflow-y-auto pb-2">${groups}</div>` + footer;
+  icons(sb);
+}
+
+/* ---------- Topbar ---------- */
+function renderTopbar(){
+  const m = metrics();
+  const cur = UI.month;
+  const monthLabel = `${MONTHS[cur.getMonth()]} ${cur.getFullYear()}`;
+  const notif = attentionItems();
+  const th = DB.data.settings.theme;
+  const tb = $('#topbar');
+  tb.innerHTML = `
+  <div class="px-3 sm:px-5 py-3 flex items-center gap-2 sm:gap-3 flex-wrap">
+    <button class="icon-btn lg:hidden" data-action="mobile-sidebar" aria-label="Open navigation">${ic('menu','w-4 h-4')}</button>
+
+    <div class="search-wrap flex-1 min-w-[180px] max-w-[380px] relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 faint pointer-events-none">${ic('search','w-4 h-4')}</span>
+      <input id="global-search" class="inp" style="padding-left:34px;border-radius:99px;background:var(--card)"
+        placeholder="Search transactions, bills, accounts…" value="${esc(UI.searchQ)}" autocomplete="off">
+      <div id="search-pop"></div>
+    </div>
+
+    <div class="month-nav order-3 sm:order-none w-full sm:w-auto justify-center">
+      <button class="icon-btn sm" data-action="month-prev" aria-label="Previous month">${ic('chevron-left','w-4 h-4')}</button>
+      <div class="month-label">${monthLabel}</div>
+      <button class="icon-btn sm" data-action="month-next" aria-label="Next month">${ic('chevron-right','w-4 h-4')}</button>
+      <button class="btn btn-sm ml-1" data-action="month-today">Today</button>
+    </div>
+
+    <div class="hidden xl:flex items-center gap-2 ml-auto">
+      <span class="pill"><span class="dot" style="background:var(--green)"></span>Income <b class="tnum">${money(m.income)}</b></span>
+      <span class="pill"><span class="dot" style="background:var(--red)"></span>Expenses <b class="tnum">${money(m.expense)}</b></span>
+      <span class="pill"><span class="dot" style="background:var(--accent)"></span>Net <b class="tnum" style="color:${m.net>=0?'var(--green)':'var(--red)'}">${money(m.net, {signed:true})}</b></span>
+    </div>
+
+    <div class="flex items-center gap-2 ml-auto xl:ml-0">
+      <button class="btn btn-primary" data-action="quick-add" data-tab="transaction">${ic('plus','w-4 h-4')}<span class="hidden sm:inline">Quick Add</span></button>
+
+      <div class="relative">
+        <button class="icon-btn" data-action="toggle-notif" aria-label="Notifications">
+          ${ic('bell','w-4 h-4')}
+          ${notif.length ? `<span class="absolute -top-1.5 -right-1.5 text-[9.5px] font-bold rounded-full px-1.5 py-[1px]"
+            style="background:var(--red);color:#fff">${notif.length}</span>` : ''}
+        </button>
+        <div id="notif-pop" class="absolute right-0 top-[calc(100%+8px)] w-[340px] max-w-[90vw] ${UI.notifOpen ? '' : 'hidden'} drop z-50">
+          <div class="px-3.5 py-3 border-b hairline flex items-center justify-between">
+            <span class="font-bold text-[13px]">Needs Attention</span>
+            <span class="badge badge-red">${notif.length}</span>
+          </div>
+          <div class="p-2 max-h-[340px] overflow-y-auto">
+            ${notif.length ? notif.map(n => `
+              <div class="drop-item items-start" data-action="notif-go" data-view="${n.view}">
+                <span class="dot mt-1.5" style="background:${n.color}"></span>
+                <div class="min-w-0">
+                  <div class="font-semibold text-[12.8px]">${esc(n.title)}</div>
+                  <div class="text-[11.5px] muted truncate">${esc(n.sub)}</div>
+                </div>
+              </div>`).join('') : `<div class="p-4 text-center text-[12.5px] muted">Nothing needs attention.</div>`}
+          </div>
+        </div>
+      </div>
+
+      <button class="icon-btn" data-action="theme-toggle" aria-label="Toggle theme"
+        title="Theme: ${th}${th==='light'?' (click for dark)':''}">
+        ${ic(th === 'dark' ? 'moon' : (th === 'contrast' ? 'contrast' : 'sun'), 'w-4 h-4')}
+      </button>
+    </div>
+  </div>`;
+  icons(tb);
+}
+
+/* ---------- View router ---------- */
+const VIEWS = {};
+function renderView(){
+  const view = $('#view');
+  const v = VIEWS[UI.view] || VIEWS.dashboard;
+  view.innerHTML = v.render();
+  view.style.animation = 'none'; void view.offsetHeight; view.style.animation = '';
+  icons(view);
+  if (v.mount) requestAnimationFrame(() => { try { v.mount(); } catch(e){ console.warn('mount error', e); } });
+}
+function renderAll(){
+  renderSidebar(); renderTopbar(); renderView(); icons();
+}
+function setView(id){
+  if (!VIEWS[id]) id = 'dashboard';
+  UI.view = id; UI.notifOpen = false;
+  if (window.innerWidth < 1024) UI.sidebarMobileOpen = false;
+  renderAll();
+  $('#view').scrollTop = 0;
+}
+function shell(inner){
+  return `<div class="px-4 sm:px-6 lg:px-8 py-6 max-w-[1440px] mx-auto">${inner}</div>`;
+}
+/* ========== View 1: Dashboard ========== */
+VIEWS.dashboard = {
+  render(){
+    const m = metrics();
+    const att = attentionItems();
+    const cur = UI.month;
+    const periodLabel = `${MONTHS[cur.getMonth()]} ${cur.getFullYear()}`;
+    const live = isCurrentPeriod(cur);
+
+    // Masthead hero: Net Worth split into integer + cents for the display numeral
+    const heroRaw = money(m.netWorth);
+    const dotAt = heroRaw.lastIndexOf('.');
+    const heroInt = dotAt > 0 ? heroRaw.slice(0, dotAt) : heroRaw;
+    const heroCents = dotAt > 0 ? heroRaw.slice(dotAt) : '';
+
+    const toneColor = t => t === 'green' ? 'var(--green)' : t === 'red' ? 'var(--red)' : t === 'amber' ? 'var(--amber)' : 'var(--text)';
+
+    const attHtml = att.length ? att.slice(0, 8).map((a, i) => `
+      <div class="att-row" data-action="notif-go" data-view="${a.view}">
+        <span class="att-num display" style="color:${a.color}">${String(i + 1).padStart(2, '0')}</span>
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold text-[13px] text-wrap-pretty">${esc(a.title)}</div>
+          <div class="text-[11.5px] muted">${esc(a.sub)}</div>
+        </div>
+        ${ic('chevron-right','w-4 h-4 faint shrink-0')}
+      </div>`).join('')
+      : `<div class="att-row" style="cursor:default">
+          <span class="att-num display" style="color:var(--green)">00</span>
+          <div><div class="font-semibold text-[13px]">All clear</div>
+          <div class="text-[11.5px] muted">No overdue bills or budget warnings.</div></div>
+        </div>`;
+
+    // Hero stat row — four numbers, hairline-separated, no cards
+    const heroStats = [
+      {label:'Income This Month', value:money(m.income), sub:`vs ${money(m.prevIncome)} last period`, tone:'green'},
+      {label:'Expenses This Month', value:money(m.expense), sub:`vs ${money(m.prevExpense)} last period`, tone:'red'},
+      {label:'Savings This Month', value:money(m.net, {signed:true}), sub:`from ${money(m.income)} inflow`, tone:m.net >= 0 ? 'green' : 'red'},
+      {label:'Savings Rate', value:pct(m.savingsRate,1), sub:m.savingsRate >= 20 ? 'above 20% target' : 'target 20%', tone:m.savingsRate >= 20 ? 'green' : 'amber'}
+    ].map(s => `
+      <div class="hstat">
+        <div class="eyebrow">${s.label}</div>
+        <div class="hero-value tnum" style="color:${toneColor(s.tone)}">${s.value}</div>
+        <div class="stat-sub">${s.sub}</div>
+      </div>`).join('');
+
+    // Key Figures — the rest of the KPI matrix as a dotted-leader ledger index
+    const ledgerItems = [
+      ['Total Assets', money(m.assets), 'accounts in the green', 'green'],
+      ['Total Liabilities', money(m.liabilities), 'owed across accounts', 'red'],
+      ['Debt Remaining', money(m.debtRemaining), `${DB.data.accounts.filter(a=>a.balance<0).length} liability accounts`, 'red'],
+      ['Emergency Fund', money(m.emergency), 'liquid safety net', 'green'],
+      ['Cash Flow', money(m.net, {signed:true}), 'income − expenses', m.net >= 0 ? 'green' : 'red'],
+      ['Remaining Budget', money(m.budgetLeft), `${money(m.budgetSpent)} of ${money(m.budgetTotal)} used`, m.budgetLeft >= 0 ? 'green' : 'red'],
+      ['Budget Used', pct(m.budgetUsed,1), `${money(m.budgetSpent)} spent`, m.budgetUsed > 100 ? 'red' : (m.budgetUsed >= 75 ? 'amber' : 'green')],
+      ['Bills Due Count', String(m.billsDueCount), m.overdueCount ? `${m.overdueCount} overdue` : 'none overdue', m.overdueCount ? 'red' : 'amber'],
+      ['Upcoming Bills', String(m.upcomingBillsCount), 'next 30 days', 'amber'],
+      ['Subscription Cost', money(m.subMonthly), `${money(m.subAnnual)}/year`, 'neutral'],
+      ['Goals in Progress', String(m.goalsInProgress), `${(DB.data.goals||[]).length} total goals`, 'neutral']
+    ].map(([label, value, sub, tone]) => `
+      <div class="led-row">
+        <div class="led-main">
+          <span class="led-label">${label}</span>
+          <span class="led-lead"></span>
+          <span class="led-value tnum" style="color:${toneColor(tone)}">${value}</span>
+        </div>
+        <div class="led-sub">${sub}</div>
+      </div>`).join('');
+
+    // Budget Health — ledger table sitting directly on the canvas
+    const budgetRows = DB.data.categories.filter(c => c.budget > 0).map(c => {
+      const spent = m.tx.filter(t => t.type === 'expense' && t.categoryId === c.id).reduce((s,t) => s + t.amount, 0);
+      const p = c.budget ? (spent/c.budget)*100 : 0;
+      const color = p > 100 ? 'var(--red)' : (p >= 75 ? 'var(--amber)' : 'var(--green)');
+      return `<div class="lt-row">
+        <span class="lt-name"><span class="dot" style="background:${c.color}"></span><span>${esc(c.name)}</span></span>
+        <div class="progress lt-bar"><span style="width:${clamp(p,0,100)}%;background:${color}"></span></div>
+        <span class="lt-amt tnum">${money(spent)} <span class="faint">/ ${money(c.budget)}</span></span>
+        <span class="lt-pct tnum" style="color:${color}">${pct(p,0)}</span>
+      </div>`;
+    }).join('');
+
+    return shell(`
+      <section class="masthead -mx-4 sm:-mx-6 lg:-mx-8">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="dateline mast-dateline">Personal Ledger · ${periodLabel}${live ? ' · live' : ''}</div>
+          <div class="flex gap-2">
+            <button class="btn" data-action="nav" data-view="transactions">${ic('list','w-4 h-4')}Ledger</button>
+            <button class="btn btn-primary" data-action="quick-add" data-tab="transaction">${ic('plus','w-4 h-4')}Add Transaction</button>
+          </div>
+        </div>
+        <div class="mast-grid">
+          <div class="min-w-0">
+            <h1 class="mast-title display">Overview</h1>
+            <div class="dateline mast-hero-label">Net Worth</div>
+            <div class="mast-hero display">${heroInt}${heroCents ? `<span class="cents">${heroCents}</span>` : ''}</div>
+          </div>
+          <div class="mast-mini">
+            <div class="mrow"><span class="mk">Assets</span><span class="mlead"></span><span class="mv tnum">${money(m.assets)}</span></div>
+            <div class="mrow"><span class="mk">Liabilities</span><span class="mlead"></span><span class="mv tnum">${money(m.liabilities)}</span></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="hero-stats">${heroStats}</div>
+
+      <div class="grid lg:grid-cols-12 gap-x-8 gap-y-7 mt-7 mb-8">
+        <div class="lg:col-span-7 min-w-0">
+          ${sectionHead('Cash Flow — Last 6 Months')}
+          <canvas id="ch-cashflow" style="width:100%;height:250px"></canvas>
+        </div>
+        <div class="lg:col-span-5 min-w-0">
+          ${sectionHead('Needs Attention')}
+          <div>${attHtml}</div>
+        </div>
+      </div>
+
+      <section class="mb-8">
+        ${sectionHead('Key Figures')}
+        <div class="ledger">${ledgerItems}</div>
+      </section>
+
+      <section>
+        ${sectionHead('Budget Health', `<button class="btn btn-sm" data-action="nav" data-view="budgets">Manage ${ic('arrow-right','w-3.5 h-3.5')}</button>`)}
+        ${budgetRows ? `<div class="lt-table">${budgetRows}</div>` : `<p class="muted text-[13px]">No budgeted categories yet.</p>`}
+      </section>
+    `);
+  },
+  mount(){
+    const months = [], inc = [], exp = [];
+    for (let i = 5; i >= 0; i--){
+      const c = addMonths(UI.month, -i);
+      const tx = periodTx(c);
+      months.push(MON3[c.getMonth()]);
+      inc.push(tx.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0));
+      exp.push(tx.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0));
+    }
+    chartLine($('#ch-cashflow'), months, [
+      {name:'Income', data: inc, color: cssVar('--green', '#2f6b4c'), fill: true},
+      {name:'Expenses', data: exp, color: cssVar('--red', '#c2382c'), fill: false}
+    ], {endLabels: true});
+  }
+};
+
+/* ========== View 2: Today ========== */
+VIEWS.today = {
+  render(){
+    const today = todayISO();
+    const now = new Date();
+    const txToday = DB.data.transactions.filter(t => t.date === today)
+      .sort((a,b) => (b.type==='income'?1:0) - (a.type==='income'?1:0));
+    const billsToday = DB.data.bills.filter(b => clampDay(now.getFullYear(), now.getMonth(), b.dueDay||1) === now.getDate());
+    const subsToday = activeSubs().filter(s => s.next === today);
+    const tasks = attentionItems().slice(0, 6);
+    const inflow = txToday.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+    const outflow = txToday.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+    const net = inflow - outflow;
+
+    const rows = txToday.length ? txToday.map(t => {
+      const a = acct(t.accountId) || {name:'—'};
+      return `<tr>
+        <td class="font-semibold">${esc(t.desc)}</td>
+        <td><span class="chip"><span class="dot" style="background:${(cat(t.categoryId)||{}).color||'var(--muted)'}"></span>${esc(catName(t.categoryId))}</span></td>
+        <td class="muted">${esc(a.name)}</td>
+        <td class="text-right">${txAmount(t)}</td>
+        <td class="text-right">
+          <div class="flex justify-end gap-1.5">
+            <button class="icon-btn sm" data-action="tx-edit" data-id="${t.id}" title="Edit">${ic('pencil','w-3.5 h-3.5')}</button>
+            <button class="icon-btn sm" data-action="tx-del" data-id="${t.id}" title="Delete">${ic('trash-2','w-3.5 h-3.5')}</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="5">${emptyState('No transactions recorded today. Add one with Quick Add.', 'plus-circle')}</td></tr>`;
+
+    const checklist = [
+      ...billsToday.map(b => ({kind:'bill', id:b.id, name:b.name, amount:b.amount, paid:(b.paidPeriods||[]).includes(today), autopay:b.autopay})),
+      ...subsToday.map(s => ({kind:'sub', id:s.id, name:s.name + ' (subscription)', amount:s.amount, paid:false, autopay:true}))
+    ];
+    const checkHtml = checklist.length ? checklist.map(c => `
+      <label class="list-row cursor-pointer" style="${c.paid ? 'opacity:.6' : ''}">
+        <input type="checkbox" class="accent-[var(--green)] w-4 h-4" data-action="${c.kind === 'bill' ? 'bill-paid-toggle' : 'noop'}"
+          data-id="${c.id}" ${c.paid ? 'checked' : ''}>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-[13px] ${c.paid ? 'line-through' : ''}">${esc(c.name)}</div>
+          <div class="text-[11.5px] muted">${c.autopay ? 'Auto-pay enabled' : 'Manual payment'} · due today</div>
+        </div>
+        <span class="tnum font-bold text-[13px]" style="color:var(--red)">${money(c.amount)}</span>
+      </label>`).join('')
+      : `<div class="list-row"><div class="muted text-[13px]">No bills or renewals due today.</div></div>`;
+
+    const taskHtml = tasks.length ? tasks.map(t => `
+      <div class="flex items-start gap-2.5 py-2">
+        <span class="dot mt-1.5" style="background:${t.color}"></span>
+        <div class="min-w-0 flex-1">
+          <div class="text-[12.8px] font-semibold text-wrap-pretty">${esc(t.title)}</div>
+          <div class="text-[11.5px] muted">${esc(t.sub)}</div>
+        </div>
+      </div>`).join('') : `<div class="muted text-[13px] py-2">No reminders.</div>`;
+
+    // 7-day projected cashflow
+    const timeline = [];
+    for (let i = 0; i < 7; i++){
+      const d = addDays(now, i), dISO = iso(d);
+      let inFlow = 0, outFlow = 0, items = [];
+      DB.data.bills.forEach(b => {
+        if (clampDay(d.getFullYear(), d.getMonth(), b.dueDay||1) === d.getDate()){
+          const paid = (b.paidPeriods||[]).includes(dISO);
+          if (!paid){ outFlow += b.amount; items.push({dir:'out', label:b.name, amount:b.amount}); }
+        }
+      });
+      activeSubs().forEach(s => {
+        if (s.next === dISO){ outFlow += s.amount; items.push({dir:'out', label:s.name, amount:s.amount}); }
+      });
+      const payday = d.getDate() === 1;
+      if (payday){ inFlow += 5200; items.push({dir:'in', label:'Salary — Acme Corp', amount:5200}); }
+      const sal = DB.data.transactions.filter(t => t.date === dISO && t.type === 'income');
+      sal.forEach(t => { inFlow += t.amount; });
+      timeline.push({d, dISO, inFlow, outFlow, items, today: i === 0});
+    }
+    const timelineHtml = timeline.map(t => {
+      const total = Math.max(t.inFlow + t.outFlow, 1);
+      const inPct = (t.inFlow/total)*100, outPct = (t.outFlow/total)*100;
+      return `<div class="flex items-center gap-3 py-2.5 ${t.today ? 'font-semibold' : ''}">
+        <div class="w-[74px] shrink-0 text-[12.5px]">
+          <div>${t.today ? 'Today' : MON3[t.d.getMonth()] + ' ' + t.d.getDate()}</div>
+          <div class="faint text-[10.5px] font-normal">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][t.d.getDay()]}</div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex h-[9px] rounded-full overflow-hidden" style="background:var(--bg);border:1px solid var(--border)">
+            <span style="width:${inPct}%;background:var(--green)"></span>
+            <span style="width:${outPct}%;background:var(--red)"></span>
+          </div>
+          <div class="text-[11.5px] muted mt-1 truncate">${t.items.length ? t.items.map(i => esc(i.label)).join(' · ') : 'No scheduled movement'}</div>
+        </div>
+        <div class="text-right shrink-0 tnum text-[12.5px] w-[92px]">
+          ${t.inFlow ? `<div style="color:var(--green)">+${money(t.inFlow)}</div>` : ''}
+          ${t.outFlow ? `<div style="color:var(--red)">−${money(t.outFlow)}</div>` : ''}
+          ${!t.inFlow && !t.outFlow ? `<div class="faint">—</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    return shell(`
+      <div class="mb-5">
+        <div class="eyebrow mb-1">${now.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'})}</div>
+        <h1 class="text-[26px] font-extrabold tracking-tight leading-none">Today</h1>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        ${kpiTile("Today's Transactions", String(txToday.length), `${money(inflow + outflow)} total volume`, 'receipt', 'neutral')}
+        ${kpiTile('Bills Due Today', String(billsToday.length), billsToday.length ? money(billsToday.reduce((s,b)=>s+b.amount,0)) : 'none', 'calendar-check', billsToday.some(b => !(b.paidPeriods||[]).includes(today)) ? 'red' : 'green')}
+        ${kpiTile('Tasks / Reminders', String(tasks.length), 'from needs-attention', 'bell-ring', tasks.length ? 'amber' : 'green')}
+        ${kpiTile('Net Today Value', money(net, {signed:true}), `${money(inflow)} in · ${money(outflow)} out`, 'scale', net >= 0 ? 'green' : 'red')}
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-4 mb-6">
+        <div class="card overflow-hidden">
+          <div class="p-4 pb-2 flex items-center justify-between">
+            ${sectionHead("Today's Transactions", `<button class="btn btn-sm" data-action="quick-add" data-tab="transaction">${ic('plus','w-3.5 h-3.5')}Add</button>`)}
+          </div>
+          <div class="overflow-x-auto">
+            <table class="tbl">
+              <thead><tr><th>Description</th><th>Category</th><th>Account</th><th class="text-right">Amount</th><th></th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card p-4">
+          ${sectionHead('Bills & Tasks Due Today')}
+          <div class="flex flex-col gap-2 mb-4">${checkHtml}</div>
+          <div class="eyebrow mb-1">Reminders</div>
+          ${taskHtml}
+        </div>
+      </div>
+
+      <div class="card p-4">
+        ${sectionHead('Upcoming 7-Day Cashflow Timeline')}
+        <div class="divide-y" style="--tw-divide-opacity:1">${timelineHtml}</div>
+      </div>
+    `);
+  },
+  mount(){}
+};
+/* ========== Calendar engine (shared by Calendar + Bill Calendar) ========== */
+function calendarGridHTML(opts={}){
+  const cur = UI.month;
+  const y = cur.getFullYear(), m = cur.getMonth();
+  const first = new Date(y, m, 1);
+  const lead = (first.getDay() + 6) % 7; // Monday-first
+  const days = dim(y, m);
+  const today = todayISO();
+  const cells = [];
+  for (let i = 0; i < lead; i++){
+    const d = addDays(first, i - lead);
+    cells.push({d, muted:true});
+  }
+  for (let d = 1; d <= days; d++) cells.push({d: new Date(y, m, d), muted:false});
+  while (cells.length % 7 !== 0){
+    const last = cells[cells.length-1].d;
+    cells.push({d: addDays(last, 1), muted:true});
+  }
+  const dows = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const html = `
+    <div class="cal-grid">
+      ${dows.map(x => `<div class="cal-dow">${x}</div>`).join('')}
+      ${cells.map(c => {
+        const dISO = iso(c.d);
+        let ev = eventsFor(dISO);
+        if (opts.billsOnly) ev = ev.filter(e => e.kind === 'bill' || e.kind === 'bill-paid' || e.kind === 'sub');
+        const shown = ev.slice(0, 3);
+        const extra = ev.length - shown.length;
+        return `<div class="cal-cell ${c.muted ? 'muted' : ''} ${dISO === today ? 'today' : ''}" data-action="cal-day" data-date="${dISO}">
+          <div class="cal-daynum">${c.d.getDate()}</div>
+          ${shown.map(e => {
+            const st = EV_STYLE[e.kind] || EV_STYLE.transfer;
+            return `<div class="cal-ev" style="background:${st.bg};color:${st.fg}" title="${esc(e.label)} ${money(e.amount)}">
+              <span class="truncate">${esc(e.label)}</span></div>`;
+          }).join('')}
+          ${extra > 0 ? `<div class="text-[10.5px] faint font-semibold pl-1">+${extra} more</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
+  return html;
+}
+function agendaListHTML(billsOnly=false){
+  const cur = UI.month, now = new Date();
+  const end = new Date(cur.getFullYear(), cur.getMonth()+1, 0);
+  const start = (dayKey(now) === dayKey(cur)) ? now : new Date(cur);
+  const items = [];
+  for (let d = new Date(start); d <= end; d = addDays(d, 1)){
+    const dISO = iso(d);
+    let ev = eventsFor(dISO);
+    if (billsOnly) ev = ev.filter(e => e.kind === 'bill' || e.kind === 'bill-paid' || e.kind === 'sub');
+    ev.forEach(e => items.push({dISO, d:new Date(d), e}));
+  }
+  if (!items.length) return emptyState('Nothing scheduled for the rest of this month.', 'calendar');
+  return items.map(({dISO, d, e}) => {
+    const st = EV_STYLE[e.kind] || EV_STYLE.transfer;
+    return `<div class="flex gap-3 items-start py-2.5">
+      <div class="w-[52px] shrink-0 text-center">
+        <div class="text-[15px] font-bold leading-none tnum">${d.getDate()}</div>
+        <div class="faint text-[10.5px] font-semibold uppercase">${MON3[d.getMonth()]}</div>
+      </div>
+      <div class="w-px self-stretch" style="background:var(--border)"></div>
+      <span class="dot mt-1.5" style="background:${st.fg}"></span>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-[13px]">${esc(e.label)}</div>
+        <div class="text-[11.5px] muted">${e.kind.startsWith('bill') ? 'Recurring bill' : e.kind === 'sub' ? 'Subscription renewal' : e.kind === 'income' ? 'Income event' : 'Expense'}</div>
+      </div>
+      <span class="tnum font-bold text-[13px]" style="color:${st.fg}">${money(e.amount)}</span>
+    </div>`;
+  }).join('');
+}
+function calendarLegend(){
+  const items = [
+    ['Income', 'var(--green)'], ['Expense', 'var(--red)'], ['Bill due', 'var(--amber)'],
+    ['Bill paid', 'var(--green)'], ['Subscription', 'var(--muted)']
+  ];
+  return items.map(([l, c]) => `<span class="flex items-center gap-1.5 text-[11.5px] muted"><span class="dot" style="background:${c}"></span>${l}</span>`).join('');
+}
+
+/* ========== View 3: Calendar & Agenda ========== */
+VIEWS.calendar = {
+  render(){ return shell(`
+    <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+      <div>
+        <div class="eyebrow mb-1">Calendar & Agenda</div>
+        <h1 class="text-[26px] font-extrabold tracking-tight leading-none">${MONTHS[UI.month.getMonth()]} ${UI.month.getFullYear()}</h1>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap">
+        ${calendarLegend()}
+        <button class="btn btn-primary" data-action="quick-add" data-tab="transaction">${ic('plus','w-4 h-4')}Quick Add</button>
+      </div>
+    </div>
+    <div class="card overflow-hidden mb-6">${calendarGridHTML()}</div>
+    <div class="card p-4">
+      ${sectionHead('Agenda — Rest of Month')}
+      ${agendaListHTML(false)}
+    </div>`);
+  },
+  mount(){}
+};
+
+/* ========== View 12: Bill Calendar ========== */
+VIEWS.billcalendar = {
+  render(){ return shell(`
+    <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+      <div>
+        <div class="eyebrow mb-1">Obligations Only</div>
+        <h1 class="text-[26px] font-extrabold tracking-tight leading-none">Bill Calendar</h1>
+        <p class="muted text-[13px] mt-1.5">Recurring bills, utilities and subscription renewals — avoid late fees.</p>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap">
+        <span class="flex items-center gap-1.5 text-[11.5px] muted"><span class="dot" style="background:var(--amber)"></span>Bill due</span>
+        <span class="flex items-center gap-1.5 text-[11.5px] muted"><span class="dot" style="background:var(--green)"></span>Paid</span>
+        <span class="flex items-center gap-1.5 text-[11.5px] muted"><span class="dot" style="background:var(--muted)"></span>Subscription</span>
+        <button class="btn" data-action="nav" data-view="bills">${ic('receipt','w-4 h-4')}Manage Bills</button>
+      </div>
+    </div>
+    <div class="card overflow-hidden mb-6">${calendarGridHTML({billsOnly:true})}</div>
+    <div class="card p-4">
+      ${sectionHead('Upcoming Obligations')}
+      ${agendaListHTML(true)}
+    </div>`);
+  },
+  mount(){}
+};
+
+/* ========== View 4: Accounts ========== */
+VIEWS.accounts = {
+  render(){
+    const m = metrics();
+    const q = UI.acctQ.toLowerCase();
+    const list = DB.data.accounts.filter(a =>
+      !q || a.name.toLowerCase().includes(q) || (a.institution||'').toLowerCase().includes(q));
+    const rows = list.length ? list.map(a => {
+      const t = acctType(a.type);
+      const balColor = a.balance >= 0 ? 'var(--text)' : 'var(--red)';
+      return `<tr>
+        <td>
+          <div class="flex items-center gap-2.5">
+            <span class="avatar-ic" style="background:var(--accent-soft);color:var(--text)">${ic(t.icon,'w-4 h-4')}</span>
+            <div class="min-w-0">
+              <div class="font-semibold">${esc(a.name)}</div>
+              <div class="faint text-[11.5px]">${esc(a.institution || '—')}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="chip">${t.label}${a.emergency ? ' · emergency' : ''}</span></td>
+        <td class="text-right tnum font-bold" style="color:${balColor}">${money(a.balance)}</td>
+        <td class="text-right">
+          <div class="flex justify-end gap-1.5">
+            <button class="icon-btn sm" data-action="acct-edit" data-id="${a.id}" title="Edit account">${ic('pencil','w-3.5 h-3.5')}</button>
+            <button class="icon-btn sm" data-action="acct-del" data-id="${a.id}" title="Delete account">${ic('trash-2','w-3.5 h-3.5')}</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="4">${emptyState('No accounts match your search.', 'wallet')}</td></tr>`;
+
+    return shell(`
+      <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+        <div>
+          <div class="eyebrow mb-1">Money</div>
+          <h1 class="text-[26px] font-extrabold tracking-tight leading-none">Accounts</h1>
+        </div>
+        <button class="btn btn-primary" data-action="quick-add" data-tab="account">${ic('plus','w-4 h-4')}Add Custom Account</button>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        ${kpiTile('Total Net Balance', money(m.netWorth), 'assets − liabilities', 'scale', m.netWorth >= 0 ? 'green' : 'red')}
+        ${kpiTile('Cash / Checking', money(m.cashAccounts), 'ready to spend', 'banknote', 'neutral')}
+        ${kpiTile('Credit Card Balances', money(m.creditBal), 'owed on cards', 'credit-card', 'red')}
+        ${kpiTile('Savings & Investments', money(m.savingsInv), 'growing assets', 'piggy-bank', 'green')}
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="p-4 flex items-center gap-3 flex-wrap">
+          <div class="search-wrap flex-1 min-w-[200px] relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 faint">${ic('search','w-4 h-4')}</span>
+            <input class="inp" style="padding-left:34px" placeholder="Search accounts or institutions…"
+              data-action="acct-search" value="${esc(UI.acctQ)}">
+          </div>
+          <span class="chip">${list.length} of ${DB.data.accounts.length}</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="tbl">
+            <thead><tr><th>Account</th><th>Type</th><th class="text-right">Balance</th><th class="text-right">Actions</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`);
+  },
+  mount(){}
+};
+/* ========== View 5: Transactions ========== */
+function txFilters(){
+  const f = UI.tx;
+  let list = DB.data.transactions.slice();
+  if (f.q){ const q = f.q.toLowerCase();
+    list = list.filter(t => t.desc.toLowerCase().includes(q) || catName(t.categoryId).toLowerCase().includes(q) ||
+      (t.tags||[]).some(x => x.toLowerCase().includes(q))); }
+  if (f.cat !== 'all') list = list.filter(t => t.categoryId === f.cat);
+  if (f.acc !== 'all') list = list.filter(t => t.accountId === f.acc || t.toAccountId === f.acc);
+  if (f.type !== 'all') list = list.filter(t => t.type === f.type);
+  const now = new Date();
+  if (f.range === 'month'){ const {start, end} = periodRange(UI.month); list = list.filter(t => inRange(t.date, start, end)); }
+  else if (f.range === '30d'){ const from = iso(addDays(now, -30)); list = list.filter(t => t.date >= from); }
+  else if (f.range === 'ytd'){ const from = iso(new Date(now.getFullYear(), 0, 1)); list = list.filter(t => t.date >= from); }
+  else if (f.range === 'custom' && f.from) list = list.filter(t => t.date >= f.from && (!f.to || t.date <= f.to));
+  const dir = f.dir === 'asc' ? 1 : -1;
+  list.sort((a,b) => {
+    if (f.sort === 'amount') return (a.amount - b.amount) * dir;
+    if (f.sort === 'desc') return a.desc.localeCompare(b.desc) * dir;
+    if (f.sort === 'category') return catName(a.categoryId).localeCompare(catName(b.categoryId)) * dir;
+    return (a.date < b.date ? -1 : a.date > b.date ? 1 : 0) * dir;
+  });
+  return list;
+}
+VIEWS.transactions = {
+  render(){
+    const f = UI.tx;
+    const all = txFilters();
+    const perPage = 10;
+    const pages = Math.max(1, Math.ceil(all.length / perPage));
+    f.page = clamp(f.page, 1, pages);
+    const page = all.slice((f.page-1)*perPage, f.page*perPage);
+    const sortIco = key => f.sort === key ? ic(f.dir === 'asc' ? 'arrow-up' : 'arrow-down','w-3 h-3 inline') : '';
+    const inSum = all.filter(t => t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const outSum = all.filter(t => t.type==='expense').reduce((s,t)=>s+t.amount,0);
+
+    const rows = page.length ? page.map(t => {
+      const a = acct(t.accountId) || {name:'—'};
+      const c = cat(t.categoryId);
+      const sel = f.sel.has(t.id);
+      return `<tr style="${sel ? 'background:var(--accent-soft)' : ''}">
+        <td><input type="checkbox" class="accent-[var(--accent)] w-4 h-4" data-action="tx-select" data-id="${t.id}" ${sel ? 'checked' : ''}></td>
+        <td class="whitespace-nowrap muted tnum">${fmtDateShort(t.date)}</td>
+        <td class="font-semibold max-w-[240px]"><div class="truncate">${esc(t.desc)}</div>
+          ${(t.tags||[]).length ? `<div class="flex gap-1 mt-1 flex-wrap">${t.tags.map(x => `<span class="chip !py-0 !text-[10px]">${esc(x)}</span>`).join('')}</div>` : ''}</td>
+        <td><span class="chip"><span class="dot" style="background:${c ? c.color : 'var(--muted)'}"></span>${esc(catName(t.categoryId))}${c && c.need ? ` · ${c.need}` : ''}</span></td>
+        <td class="muted whitespace-nowrap">${esc(a.name)}</td>
+        <td class="text-right whitespace-nowrap">${txAmount(t)}</td>
+        <td class="text-right whitespace-nowrap">
+          <div class="flex justify-end gap-1.5">
+            <button class="icon-btn sm" data-action="tx-edit" data-id="${t.id}" title="Edit">${ic('pencil','w-3.5 h-3.5')}</button>
+            <button class="icon-btn sm" data-action="tx-dup" data-id="${t.id}" title="Duplicate">${ic('copy','w-3.5 h-3.5')}</button>
+            <button class="icon-btn sm" data-action="tx-del" data-id="${t.id}" title="Delete">${ic('trash-2','w-3.5 h-3.5')}</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="7">${emptyState('No transactions match these filters.', 'search-x')}</td></tr>`;
+
+    const catOpts = [`<option value="all">All categories</option>`]
+      .concat(DB.data.categories.map(c => `<option value="${c.id}" ${f.cat===c.id?'selected':''}>${esc(c.name)}</option>`)).join('');
+    const accOpts = [`<option value="all">All accounts</option>`]
+      .concat(DB.data.accounts.map(a => `<option value="${a.id}" ${f.acc===a.id?'selected':''}>${esc(a.name)}</option>`)).join('');
+    const typeOpts = [['all','All types'],['income','Income'],['expense','Expense'],['transfer','Transfer']]
+      .map(([v,l]) => `<option value="${v}" ${f.type===v?'selected':''}>${l}</option>`).join('');
+    const rangeOpts = [['month','This period'],['30d','Last 30 days'],['ytd','Year to date'],['all','All time'],['custom','Custom range']]
+      .map(([v,l]) => `<option value="${v}" ${f.range===v?'selected':''}>${l}</option>`).join('');
+
+    return shell(`
+      <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+        <div>
+          <div class="eyebrow mb-1">Money</div>
+          <h1 class="text-[26px] font-extrabold tracking-tight leading-none">Transactions</h1>
+        </div>
+        <button class="btn btn-primary" data-action="quick-add" data-tab="transaction">${ic('plus','w-4 h-4')}Add Transaction</button>
+      </div>
+
+      <div class="card p-4 mb-4">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div class="relative lg:col-span-1">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 faint">${ic('search','w-4 h-4')}</span>
+            <input class="inp" style="padding-left:34px" placeholder="Search…" value="${esc(f.q)}" data-filter="q">
+          </div>
+          <select class="inp" data-filter="cat">${catOpts}</select>
+          <select class="inp" data-filter="acc">${accOpts}</select>
+          <select class="inp" data-filter="type">${typeOpts}</select>
+          <select class="inp" data-filter="range">${rangeOpts}</select>
+          ${f.range === 'custom' ? `
+            <input type="date" class="inp" data-filter="from" value="${esc(f.from)}">
+            <input type="date" class="inp" data-filter="to" value="${esc(f.to)}">` : ''}
+        </div>
+        <div class="flex items-center justify-between gap-3 mt-3 pt-3 flex-wrap" style="border-top:1px solid var(--border)">
+          <div class="flex items-center gap-3 flex-wrap text-[12.5px] muted">
+            <span><b class="tnum" style="color:var(--green)">${money(inSum)}</b> in</span>
+            <span><b class="tnum" style="color:var(--red)">${money(outSum)}</b> out</span>
+            <span class="faint">${all.length} results</span>
+          </div>
+          ${f.sel.size ? `
+            <div class="flex items-center gap-2 pop">
+              <span class="badge badge-neutral">${f.sel.size} selected</span>
+              <button class="btn btn-sm" data-action="bulk-categorize">${ic('tags','w-3.5 h-3.5')}Categorize</button>
+              <button class="btn btn-sm btn-danger" data-action="bulk-delete">${ic('trash-2','w-3.5 h-3.5')}Delete</button>
+              <button class="btn btn-sm btn-ghost" data-action="bulk-clear">Clear</button>
+            </div>` : `
+            <button class="btn btn-sm btn-ghost" data-action="select-page">${ic('check-square','w-3.5 h-3.5')}Select page</button>`}
+        </div>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="tbl">
+            <thead><tr>
+              <th style="width:34px"><input type="checkbox" class="accent-[var(--accent)] w-4 h-4" data-action="select-page"></th>
+              <th class="sortable" data-action="tx-sort" data-key="date">Date ${sortIco('date')}</th>
+              <th class="sortable" data-action="tx-sort" data-key="desc">Description ${sortIco('desc')}</th>
+              <th class="sortable" data-action="tx-sort" data-key="category">Category ${sortIco('category')}</th>
+              <th>Account</th>
+              <th class="text-right sortable" data-action="tx-sort" data-key="amount">Amount ${sortIco('amount')}</th>
+              <th class="text-right">Actions</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="p-3.5 flex items-center justify-between gap-3 flex-wrap" style="border-top:1px solid var(--border)">
+          <span class="text-[12.5px] muted">Page ${f.page} of ${pages}</span>
+          <div class="flex gap-2">
+            <button class="btn btn-sm" data-action="tx-page" data-page="${f.page-1}" ${f.page<=1?'disabled style="opacity:.45;pointer-events:none"':''}>${ic('chevron-left','w-3.5 h-3.5')}Prev</button>
+            <button class="btn btn-sm" data-action="tx-page" data-page="${f.page+1}" ${f.page>=pages?'disabled style="opacity:.45;pointer-events:none"':''}>Next${ic('chevron-right','w-3.5 h-3.5')}</button>
+          </div>
+        </div>
+      </div>`);
+  },
+  mount(){}
+};
+
+/* ========== View 6: Income ========== */
+VIEWS.income = {
+  render(){
+    const cur = UI.month, now = new Date();
+    const tx = periodTx(cur);
+    const incomeTx = tx.filter(t => t.type === 'income');
+    const total = incomeTx.reduce((s,t) => s + t.amount, 0);
+    const ytdFrom = iso(new Date(now.getFullYear(), 0, 1));
+    const ytd = DB.data.transactions.filter(t => t.type === 'income' && t.date >= ytdFrom).reduce((s,t)=>s+t.amount,0);
+    const monthsElapsed = now.getMonth() + 1;
+    const avg = ytd / Math.max(1, monthsElapsed);
+    const sources = {};
+    incomeTx.forEach(t => { sources[t.categoryId] = (sources[t.categoryId] || 0) + t.amount; });
+    const sourceRows = DB.data.categories.filter(c => c.kind === 'income').map(c => {
+      const v = sources[c.id] || 0;
+      const share = total ? (v/total)*100 : 0;
+      return `<tr>
+        <td><span class="chip"><span class="dot" style="background:${c.color}"></span>${ic(c.icon,'w-3.5 h-3.5')}${esc(c.name)}</span></td>
+        <td class="text-right tnum font-semibold">${money(v)}</td>
+        <td class="w-[38%]"><div class="progress"><span style="width:${clamp(share,0,100)}%;background:${c.color}"></span></div></td>
+        <td class="text-right faint tnum">${pct(share,1)}</td>
+      </tr>`;
+    }).join('');
+    const q = UI.incQ.toLowerCase();
+    const entries = incomeTx.filter(t => !q || t.desc.toLowerCase().includes(q) || catName(t.categoryId).toLowerCase().includes(q))
+      .sort((a,b) => a.date < b.date ? 1 : -1);
+    const entryRows = entries.length ? entries.map(t => `
+      <tr>
+        <td class="muted tnum whitespace-nowrap">${fmtDateShort(t.date)}</td>
+        <td class="font-semibold">${esc(t.desc)}</td>
+        <td><span class="badge badge-green">${esc(catName(t.categoryId))}</span></td>
+        <td class="muted">${esc((acct(t.accountId)||{}).name || '—')}</td>
+        <td class="text-right tnum font-bold" style="color:var(--green)">${money(t.amount, {signed:true})}</td>
+        <td class="text-right">
+          <div class="flex justify-end gap-1.5">
+            <button class="icon-btn sm" data-action="tx-edit" data-id="${t.id}">${ic('pencil','w-3.5 h-3.5')}</button>
+            <button class="icon-btn sm" data-action="tx-del" data-id="${t.id}">${ic('trash-2','w-3.5 h-3.5')}</button>
+          </div>
+        </td>
+      </tr>`).join('') : `<tr><td colspan="6">${emptyState('No income entries for this period.', 'trending-up')}</td></tr>`;
+
+    return shell(`
+      <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+        <div>
+          <div class="eyebrow mb-1">Money · Inflow</div>
+          <h1 class="text-[26px] font-extrabold tracking-tight leading-none">Income</h1>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn" data-action="quick-add" data-tab="category" data-kind="income">${ic('tags','w-4 h-4')}Manage Income Categories</button>
+          <button class="btn btn-primary" data-action="quick-add" data-tab="transaction" data-type="income">${ic('plus','w-4 h-4')}Add Income</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        ${kpiTile('Income This Month', money(total), MONTHS[cur.getMonth()] + ' ' + cur.getFullYear(), 'trending-up', 'green')}
+        ${kpiTile('Year-to-Date Income', money(ytd), 'since January', 'calendar', 'green')}
+        ${kpiTile('Average Monthly', money(avg), 'YTD average', 'chart-line', 'neutral')}
+        ${kpiTile('Active Income Sources', String(Object.values(sources).filter(v => v > 0).length), 'used this period', 'layers', 'neutral')}
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-4 mb-6">
+        <div class="card p-4">
+          ${sectionHead('Monthly Income Trend')}
+          <canvas id="ch-inc-trend" style="width:100%;height:230px"></canvas>
+        </div>
+        <div class="card p-4">
+          ${sectionHead('Distribution by Source')}
+          <div class="flex items-center gap-4">
+            <canvas id="ch-inc-donut" style="width:170px;height:170px;flex:none"></canvas>
+            <div class="flex-1 flex flex-col gap-2 min-w-0">
+              ${Object.keys(sources).length ? Object.entries(sources).map(([cid, v]) => `
+                <div class="flex items-center justify-between gap-2 text-[12.5px]">
+                  <span class="flex items-center gap-2 min-w-0"><span class="dot" style="background:${(cat(cid)||{}).color||'#999'}"></span>
+                  <span class="truncate">${esc(catName(cid))}</span></span>
+                  <b class="tnum shrink-0">${money(v)}</b>
+                </div>`).join('') : `<span class="muted text-[13px]">No income yet this period.</span>`}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-4 mb-6">
+        ${sectionHead('Source Stream Summary')}
+        <table class="tbl">
+          <thead><tr><th>Source</th><th class="text-right">This Period</th><th>Share</th><th class="text-right"></th></tr></thead>
+          <tbody>${sourceRows}</tbody>
+        </table>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="p-4 flex items-center gap-3 flex-wrap">
+          <div class="search-wrap flex-1 min-w-[200px] relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 faint">${ic('search','w-4 h-4')}</span>
+            <input class="inp" style="padding-left:34px" placeholder="Filter income entries…" value="${esc(UI.incQ)}" data-action="inc-search">
+          </div>
+          <span class="chip">${entries.length} entries</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="tbl">
+            <thead><tr><th>Date</th><th>Source / Description</th><th>Category</th><th>Account</th><th class="text-right">Amount</th><th></th></tr></thead>
+            <tbody>${entryRows}</tbody>
+          </table>
+        </div>
+      </div>`);
+  },
+  mount(){
+    const months = [], vals = [];
+    for (let i = 5; i >= 0; i--){
+      const c = addMonths(UI.month, -i);
+      months.push(MON3[c.getMonth()]);
+      vals.push(periodTx(c).filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0));
+    }
+    chartLine($('#ch-inc-trend'), months, [{data: vals, color: cssVar('--green', '#2f6b4c'), fill: true}]);
+    const m = metrics();
+    const sources = {};
+    m.tx.filter(t => t.type === 'income').forEach(t => { sources[t.categoryId] = (sources[t.categoryId]||0) + t.amount; });
+    const items = Object.entries(sources).map(([cid, v]) => ({label: catName(cid), value: v, color: (cat(cid)||{}).color || '#666'}));
+    if (items.length) chartDonut($('#ch-inc-donut'), items, 'income', moneyShort(items.reduce((s,i)=>s+i.value,0)));
+  }
+};
+
+/* ========== View 7: Expenses ========== */
+VIEWS.expenses = {
+  render(){
+    const m = metrics();
+    const expTx = m.tx.filter(t => t.type === 'expense');
+    const byCat = {};
+    expTx.forEach(t => { byCat[t.categoryId] = (byCat[t.categoryId]||0) + t.amount; });
+    const total = expTx.reduce((s,t) => s + t.amount, 0);
+    const pNeeds = m.income > 0 ? (m.needs / m.income) * 100 : (total ? (m.needs/total)*100 : 0);
+    const pWants = m.income > 0 ? (m.wants / m.income) * 100 : (total ? (m.wants/total)*100 : 0);
+    const pSave  = m.income > 0 ? (m.net / m.income) * 100 : 0;
+    const bar = (label, val, pctv, target, color) => `
+      <div class="py-2.5 progress-row">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="font-semibold text-[13px]">${label} <span class="faint font-normal text-[11.5px]">target ${target}%</span></span>
+          <span class="text-[12.5px] tnum"><b>${pct(val,1)}</b> <span class="faint">· ${money(label === 'Needs' ? m.needs : label === 'Wants' ? m.wants : Math.max(0, m.net))}</span></span>
+        </div>
+        <div class="progress" style="height:9px"><span style="width:${clamp(pctv,0,100)}%;background:${color}"></span></div>
+      </div>`;
+    const rows = expTx.slice().sort((a,b) => a.date < b.date ? 1 : -1).slice(0, 40);
+    const ledger = rows.length ? rows.map(t => {
+      const c = cat(t.categoryId);
+      return `<tr>
+        <td class="muted tnum whitespace-nowrap">${fmtDateShort(t.date)}</td>
+        <td class="font-semibold">${esc(t.desc)}</td>
+        <td><span class="chip"><span class="dot" style="background:${c?c.color:'var(--muted)'}"></span>${esc(catName(t.categoryId))}</span></td>
+        <td class="muted">${esc((acct(t.accountId)||{}).name || '—')}</td>
+        <td>${needBadge(c)}</td>
+        <td class="text-right tnum font-bold" style="color:var(--red)">${money(t.amount)}</td>
+        <td class="text-right"><div class="flex justify-end gap-1.5">
+          <button class="icon-btn sm" data-action="tx-edit" data-id="${t.id}">${ic('pencil','w-3.5 h-3.5')}</button>
+          <button class="icon-btn sm" data-action="tx-del" data-id="${t.id}">${ic('trash-2','w-3.5 h-3.5')}</button>
+        </div></td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="7">${emptyState('No expenses in this period.', 'trending-down')}</td></tr>`;
+
+    return shell(`
+      <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+        <div>
+          <div class="eyebrow mb-1">Money · Outflow</div>
+          <h1 class="text-[26px] font-extrabold tracking-tight leading-none">Expenses</h1>
+        </div>
+        <button class="btn btn-primary" data-action="quick-add" data-tab="transaction" data-type="expense">${ic('plus','w-4 h-4')}Add Expense</button>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        ${kpiTile('Expenses This Month', money(m.expense), MONTHS[UI.month.getMonth()] + ' ' + UI.month.getFullYear(), 'trending-down', 'red')}
+        ${kpiTile('Selected Range Outflow', money(total), `${expTx.length} transactions`, 'filter', 'neutral')}
+        ${kpiTile('Total Needs Spend', money(m.needs), 'essentials', 'home', 'green')}
+        ${kpiTile('Total Wants Spend', money(m.wants), 'lifestyle', 'sparkles', 'amber')}
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-4 mb-6">
+        <div class="card p-4">
+          ${sectionHead('Category Distribution')}
+          <div class="flex items-center gap-4">
+            <canvas id="ch-exp-donut" style="width:170px;height:170px;flex:none"></canvas>
+            <div class="flex-1 flex flex-col gap-1.5 min-w-0 max-h-[170px] overflow-y-auto pr-1">
+              ${Object.entries(byCat).sort((a,b) => b[1]-a[1]).slice(0,8).map(([cid, v]) => `
+                <div class="flex items-center justify-between gap-2 text-[12.5px]">
+                  <span class="flex items-center gap-2 min-w-0"><span class="dot" style="background:${(cat(cid)||{}).color||'#999'}"></span>
+                    <span class="truncate">${esc(catName(cid))}</span></span>
+                  <b class="tnum shrink-0">${money(v)}</b>
+                </div>`).join('') || `<span class="muted text-[13px]">No expenses yet.</span>`}
+            </div>
+          </div>
+        </div>
+        <div class="card p-4">
+          ${sectionHead('50 / 30 / 20 Rule', `<span class="chip ${m.net>0?'badge-green':''}">${pct(pSave,0)} saved</span>`)}
+          ${bar('Needs', pNeeds, pNeeds, 50, 'var(--green)')}
+          ${bar('Wants', pWants, pWants, 30, 'var(--amber)')}
+          ${bar('Savings / Debt', pSave, pSave, 20, 'var(--accent)')}
+          <p class="text-[11.5px] muted mt-2 text-wrap-pretty">Benchmark: 50% needs, 30% wants, 20% savings/debt repayment${pSave < 0 ? ' — you are currently spending above income.' : '.'}</p>
+        </div>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="p-4 flex items-center justify-between gap-3 flex-wrap">
+          ${sectionHead('Expense Ledger')}
+          <span class="chip">${ic('calendar','w-3 h-3')} ${MONTHS[UI.month.getMonth()]} ${UI.month.getFullYear()} · latest 40</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="tbl">
+            <thead><tr><th>Date</th><th>Merchant / Recipient</th><th>Category</th><th>Account</th><th>Need / Want</th><th class="text-right">Amount</th><th></th></tr></thead>
+            <tbody>${ledger}</tbody>
+          </table>
+        </div>
+      </div>`);
+  },
+  mount(){
+    const m = metrics();
+    const byCat = {};
+    m.tx.filter(t => t.type === 'expense').forEach(t => { byCat[t.categoryId] = (byCat[t.categoryId]||0) + t.amount; });
+    const items = Object.entries(byCat).sort((a,b) => b[1]-a[1])
+      .map(([cid, v]) => ({label: catName(cid), value: v, color: (cat(cid)||{}).color || '#666'}));
+    if (items.length) chartDonut($('#ch-exp-donut'), items, 'spent', moneyShort(items.reduce((s,i)=>s+i.value,0)));
+  }
+};
+/* ========== View 8: Budget Categories ========== */
+VIEWS.budgets = {
+  render(){
+    const m = metrics();
+    const cats = DB.data.categories.filter(c => c.kind === 'expense');
+    const cards = cats.length ? cats.map(c => {
+      const spent = m.tx.filter(t => t.type === 'expense' && t.categoryId === c.id).reduce((s,t) => s + t.amount, 0);
+      const total = c.budget || 0;
+      const p = total ? (spent/total)*100 : 0;
+      const remaining = total - spent;
+      const color = p > 100 ? 'var(--red)' : (p >= 75 ? 'var(--amber)' : 'var(--green)');
+      const status = !total ? 'no limit' : (p > 100 ? `over by ${money(Math.abs(remaining))}` : `${money(remaining)} left`);
+      return `<div class="card card-hover p-4">
+        <div class="flex items-start justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="avatar-ic" style="background:${c.color}1f;color:${c.color}">${ic(c.icon || 'folder', 'w-4 h-4')}</span>
+            <div class="min-w-0">
+              <div class="font-bold text-[14px] truncate">${esc(c.name)}</div>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span class="dot" style="background:${c.color}"></span>
+                <span class="faint text-[11px] uppercase tracking-wider font-semibold">${c.need || 'any'}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-1.5 shrink-0">
+            <button class="icon-btn sm" data-action="cat-edit" data-id="${c.id}" title="Edit category">${ic('pencil','w-3.5 h-3.5')}</button>
+            <button class="icon-btn sm" data-action="cat-del" data-id="${c.id}" title="Delete category">${ic('trash-2','w-3.5 h-3.5')}</button>
+          </div>
+        </div>
+        <div class="flex items-end justify-between gap-2 mb-2">
+          <div><span class="stat-value tnum">${money(spent)}</span>
+            <span class="muted text-[12.5px]"> / ${money(total)}</span></div>
+          <span class="badge" style="background:${p > 100 ? 'var(--red-soft)' : (p >= 75 ? 'var(--amber-soft)' : 'var(--green-soft)')};color:${color}">${pct(p,0)}</span>
+        </div>
+        <div class="progress"><span style="width:${clamp(p,0,100)}%;background:${color}"></span></div>
+        <div class="flex items-center justify-between mt-2 text-[12px]">
+          <span class="muted">${status}</span>
+          <span class="faint">${total ? 'monthly target' : 'add a target'}</span>
+        </div>
+      </div>`;
+    }).join('') : emptyState('No expense categories. Create your first one.', 'target');
+
+    return shell(`
+      <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+        <div>
+          <div class="eyebrow mb-1">Budgeting</div>
+          <h1 class="text-[26px] font-extrabold tracking-tight leading-none">Budget Categories</h1>
+        </div>
+        <button class="btn btn-primary" data-action="quick-add" data-tab="category">${ic('plus','w-4 h-4')}New Category</button>
+      </div>
+
+      <div class="card p-4 mb-6 flex flex-wrap items-center gap-6">
+        <div class="flex-1 min-w-[160px]">
+          <div class="eyebrow mb-1">Total Allocated</div>
+          <div class="stat-value tnum">${money(m.budgetTotal)}</div>
+        </div>
+        <div class="flex-1 min-w-[160px]">
+          <div class="eyebrow mb-1">Spent This Period</div>
+          <div class="stat-value tnum" style="color:var(--red)">${money(m.budgetSpent)}</div>
+        </div>
+        <div class="flex-1 min-w-[160px]">
+          <div class="eyebrow mb-1">Remaining</div>
+          <div class="stat-value tnum" style="color:${m.budgetLeft >= 0 ? 'var(--green)' : 'var(--red)'}">${money(m.budgetLeft)}</div>
+        </div>
+        <div class="flex-1 min-w-[160px]">
+          <div class="eyebrow mb-1">Budget Used</div>
+          <div class="stat-value tnum">${pct(m.budgetUsed,1)}</div>
+          <div class="progress mt-2"><span style="width:${clamp(m.budgetUsed,0,100)}%;background:${m.budgetUsed>100?'var(--red)':(m.budgetUsed>=75?'var(--amber)':'var(--green)')}"></span></div>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">${cards}</div>`);
+  },
+  mount(){}
+};
+
+/* ========== View 9: Spending Tracker ========== */
+VIEWS.spending = {
+  render(){
+    const m = metrics();
+    const cur = UI.month, now = new Date();
+    const curTx = m.tx.filter(t => t.type === 'expense');
+    const total = curTx.reduce((s,t) => s + t.amount, 0);
+    const elapsed = isCurrentPeriod(cur) ? daysElapsedInPeriod() : periodDays(cur);
+    const totalDays = periodDays(cur);
+    const dailyAvg = total / Math.max(1, elapsed);
+    const projected = dailyAvg * totalDays;
+    const prevTx = periodTx(addMonths(cur, -1)).filter(t => t.type === 'expense');
+    const prevTotal = prevTx.reduce((s,t) => s + t.amount, 0);
+    const delta = prevTotal ? ((total - prevTotal) / prevTotal) * 100 : 0;
+
+    const byDay = {};
+    curTx.forEach(t => { byDay[t.date] = (byDay[t.date]||0) + t.amount; });
+    const topDays = Object.entries(byDay).sort((a,b) => b[1]-a[1]).slice(0, 5);
+    const byMerchant = {};
+    curTx.forEach(t => { byMerchant[t.desc] = (byMerchant[t.desc]||0) + t.amount; });
+    const merchants = Object.entries(byMerchant).sort((a,b) => b[1]-a[1]).slice(0, 8);
+    const maxMerchant = merchants.length ? merchants[0][1] : 1;
+
+    const byCat = {};
+    curTx.forEach(t => { byCat[t.categoryId] = (byCat[t.categoryId]||0) + t.amount; });
+    const byCatPrev = {};
+    prevTx.forEach(t => { byCatPrev[t.categoryId] = (byCatPrev[t.categoryId]||0) + t.amount; });
+    const topCats = Object.entries(byCat).sort((a,b) => b[1]-a[1]).slice(0, 6);
+
+    return shell(`
+      <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+        <div>
+          <div class="eyebrow mb-1">Budgeting · Analytics</div>
+          <h1 class="text-[26px] font-extrabold tracking-tight leading-none">Spending Tracker</h1>
+        </div>
+        <span class="chip">${ic('calendar','w-3 h-3')} ${MONTHS[cur.getMonth()]} ${cur.getFullYear()} · day ${elapsed} of ${totalDays}</span>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        ${kpiTile('Daily Average Burn', money(dailyAvg), `${totalDays - elapsed} days remaining`, 'flame', 'amber')}
+        ${kpiTile('Projected Month-End', money(projected), prevTotal ? `${Math.abs(delta).toFixed(0)}% vs last month` : 'first tracked month', 'crosshair', projected > m.budgetTotal ? 'red' : 'neutral')}
+        ${kpiTile('Top Spending Day', topDays.length ? money(topDays[0][1]) : money(0), topDays.length ? fmtDateShort(topDays[0][0]) : '—', 'zap', 'red')}
+        ${kpiTile('Period Total Spend', money(total), `prev period ${money(prevTotal)}`, 'shopping-cart', 'red')}
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-4 mb-6">
+        <div class="card p-4">
+          ${sectionHead('Daily Spend Velocity', `<span class="chip">last ${elapsed} days</span>`)}
+          <canvas id="ch-daily" style="width:100%;height:220px"></canvas>
+        </div>
+        <div class="card p-4">
+          ${sectionHead('Month-over-Month by Category', `
+            <span class="flex gap-3 text-[11.5px] muted">
+              <span class="flex items-center gap-1.5"><span class="dot" style="background:var(--accent)"></span>This</span>
+              <span class="flex items-center gap-1.5"><span class="dot" style="background:var(--faint)"></span>Prev</span>
+            </span>`)}
+          <canvas id="ch-mom" style="width:100%;height:220px"></canvas>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-4">
+        <div class="card p-4">
+          ${sectionHead('Top Spending Velocity Days')}
+          <div class="flex flex-col gap-2">
+            ${topDays.length ? topDays.map(([d, v], i) => `
+              <div class="list-row">
+                <span class="badge ${i===0?'badge-red':'badge-neutral'}">#${i+1}</span>
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold text-[13px]">${fmtDate(d)}</div>
+                  <div class="progress mt-1.5"><span style="width:${(v/topDays[0][1])*100}%;background:var(--red)"></span></div>
+                </div>
+                <span class="tnum font-bold text-[13px]" style="color:var(--red)">${money(v)}</span>
+              </div>`).join('') : `<p class="muted text-[13px]">No spending recorded this period.</p>`}
+          </div>
+        </div>
+        <div class="card p-4">
+          ${sectionHead('Merchant Leaderboard')}
+          <div class="flex flex-col gap-2">
+            ${merchants.length ? merchants.map(([name, v], i) => `
+              <div class="list-row">
+                <span class="w-5 text-center faint font-bold text-[12px] tnum">${i+1}</span>
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold text-[13px] truncate">${esc(name)}</div>
+                  <div class="progress mt-1.5"><span style="width:${(v/maxMerchant)*100}%;background:var(--accent)"></span></div>
+                </div>
+                <span class="tnum font-bold text-[13px]">${money(v)}</span>
+              </div>`).join('') : `<p class="muted text-[13px]">No merchants yet.</p>`}
+          </div>
+        </div>
+      </div>`);
+  },
+  mount(){
+    const curTx = periodTx(UI.month).filter(t => t.type === 'expense');
+    const prevTx = periodTx(addMonths(UI.month, -1)).filter(t => t.type === 'expense');
+    const elapsed = isCurrentPeriod(UI.month) ? daysElapsedInPeriod() : periodDays(UI.month);
+    const {start} = periodRange(UI.month);
+    const daily = [], labels = [];
+    for (let i = 0; i < elapsed; i++){
+      const dISO = iso(addDays(start, i));
+      labels.push(String(parseISO(dISO).getDate()));
+      daily.push(curTx.filter(t => t.date === dISO).reduce((s,t) => s + t.amount, 0));
+    }
+    chartBars($('#ch-daily'), labels, [{data: daily, color: cssVar('--red', '#c2382c')}], {barWidth: 14});
+
+    const byCat = {}, byCatPrev = {};
+    curTx.forEach(t => { byCat[t.categoryId] = (byCat[t.categoryId]||0) + t.amount; });
+    prevTx.forEach(t => { byCatPrev[t.categoryId] = (byCatPrev[t.categoryId]||0) + t.amount; });
+    const top = Object.entries(byCat).sort((a,b) => b[1]-a[1]).slice(0, 6).map(([id]) => id);
+    chartBars($('#ch-mom'), top.map(id => catName(id)), [
+      {data: top.map(id => byCat[id] || 0), color: cssVar('--accent', '#49111c')},
+      {data: top.map(id => byCatPrev[id] || 0), color: cssVar('--faint', '#999')}
+    ], {barWidth: 20});
+  }
+};
+
+/* ========== View 10: Bills ========== */
+VIEWS.bills = {
+  render(){
+    const m = metrics();
+    const now = new Date();
+    const bills = DB.data.bills.slice().sort((a,b) => a.dueDay - b.dueDay);
+    const cards = bills.length ? bills.map(b => {
+      const status = billStatus(b);
+      const paid = status === 'paid';
+      const due = billDueDate(b, monthStart(now));
+      const badge = paid ? `<span class="badge badge-green">Paid</span>`
+        : status === 'overdue' ? `<span class="badge badge-red">Overdue</span>`
+        : status === 'due-soon' ? `<span class="badge badge-amber">Due soon</span>`
+        : `<span class="badge badge-neutral">Upcoming</span>`;
+      const days = daysBetween(todayISO(), iso(due));
+      return `<div class="card card-hover p-4" style="${status==='overdue' ? 'border-color:var(--red)' : ''}">
+        <div class="flex items-start justify-between gap-3 mb-3">
+          <div class="flex items-start gap-2.5 min-w-0">
+            <input type="checkbox" class="accent-[var(--green)] w-4 h-4 mt-1" data-action="bill-paid-toggle" data-id="${b.id}" ${paid ? 'checked' : ''} title="Mark as paid">
+            <div class="min-w-0">
+              <div class="font-bold text-[14px] ${paid ? 'line-through opacity-65' : ''}">${esc(b.name)}</div>
+              <div class="text-[11.5px] muted mt-0.5">${esc(catName(b.categoryId))} · ${esc((acct(b.accountId)||{}).name || '—')}</div>
+            </div>
+          </div>
+          ${badge}
+        </div>
+        <div class="flex items-end justify-between gap-3">
+          <div>
+            <div class="stat-value tnum" style="color:${status==='overdue'?'var(--red)':'var(--text)'}">${money(b.amount)}</div>
+            <div class="text-[11.5px] muted mt-0.5">due ${MON3[due.getMonth()]} ${due.getDate()}${!paid && days >= 0 ? ` · in ${days}d` : ''}</div>
+          </div>
+          <div class="flex flex-col items-end gap-1.5">
+            ${b.autopay ? `<span class="chip">${ic('zap','w-3 h-3')} auto-pay</span>` : `<span class="chip">${ic('hand','w-3 h-3')} manual</span>`}
+            <div class="flex gap-1.5">
+              <button class="icon-btn sm" data-action="bill-edit" data-id="${b.id}">${ic('pencil','w-3.5 h-3.5')}</button>
+              <button class="icon-btn sm" data-action="bill-del" data-id="${b.id}">${ic('trash-2','w-3.5 h-3.5')}</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('') : emptyState('No recurring bills yet. Add your first obligation.', 'receipt');
+
+    return shell(`
+      <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+        <div>
+          <div class="eyebrow mb-1">Obligations</div>
+          <h1 class="text-[26px] font-extrabold tracking-tight leading-none">Bills</h1>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn" data-action="nav" data-view="billcalendar">${ic('calendar-clock','w-4 h-4')}Bill Calendar</button>
+          <button class="btn btn-primary" data-action="quick-add" data-tab="bill">${ic('plus','w-4 h-4')}Add Bill</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        ${kpiTile('Total Monthly Bills', money(m.billsTotalMonth), `${DB.data.bills.length} recurring`, 'receipt', 'neutral')}
+        ${kpiTile('Paid This Month', String(m.billsPaidCount), money(m.billsPaidAmount), 'check-circle-2', 'green')}
+        ${kpiTile('Remaining Unpaid', String(m.billsUnpaidCount), money(m.billsTotalMonth - m.billsPaidAmount), 'clock', 'amber')}
+        ${kpiTile('Overdue Amount', money(m.overdueAmount), `${m.overdueCount} bill${m.overdueCount===1?'':'s'}`, 'alert-triangle', m.overdueAmount ? 'red' : 'green')}
+      </div>
+
+      <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">${cards}</div>`);
+  },
+  mount(){}
+};
+/* ========== View 11: Subscriptions ========== */
+VIEWS.subscriptions = {
+  render(){
+    const subs = DB.data.subscriptions.slice().sort((a,b) => a.next < b.next ? -1 : 1);
+    const act = activeSubs();
+    const monthly = act.reduce((s,x) => s + subMonthly(x), 0);
+    const most = act.slice().sort((a,b) => subMonthly(b) - subMonthly(a))[0];
+    const now = todayISO();
+
+    const subCard = s => {
+      const days = daysBetween(now, s.next);
+      const trialSoon = s.trialEnd && daysBetween(now, s.trialEnd) >= 0 && daysBetween(now, s.trialEnd) <= 7;
+      const renewIn = days <= 0 ? 'renews today' : days === 1 ? 'renews tomorrow' : `renews in ${days}d`;
+      return `<div class="card card-hover p-4" style="${trialSoon ? 'border-color:var(--amber)' : ''}">
+        <div class="flex items-start justify-between gap-3 mb-3">
+          <div class="flex items-start gap-2.5 min-w-0">
+            <span class="avatar-ic" style="background:var(--accent-soft);color:var(--text)">${ic('repeat','w-4 h-4')}</span>
+            <div class="min-w-0">
+              <div class="font-bold text-[14px] truncate ${s.active ? '' : 'line-through opacity-60'}">${esc(s.name)}</div>
+              <div class="text-[11.5px] muted">${esc(catName(s.categoryId))} · ${s.cycle}</div>
+            </div>
+          </div>
+          ${!s.active ? `<span class="badge badge-neutral">Cancelled</span>`
+            : trialSoon ? `<span class="badge badge-amber">Trial ends ${fmtDateShort(s.trialEnd)}</span>`
+            : days <= 7 ? `<span class="badge badge-amber">${renewIn}</span>`
+            : `<span class="badge badge-green">Active</span>`}
+        </div>
+        <div class="flex items-end justify-between gap-3">
+          <div>
+            <div class="stat-value tnum">${money(s.amount)}</div>
+            <div class="text-[11.5px] muted mt-0.5">${s.cycle === 'annual' ? money(subMonthly(s)) + '/mo effective' : 'per month'} · next ${fmtDateShort(s.next)}</div>
+          </div>
+          <div class="flex flex-col items-end gap-1.5">
+            <button class="chip" data-action="sub-reminder" data-id="${s.id}" title="Toggle cancellation reminder"
+              style="${s.reminder ? 'border-color:var(--amber);color:var(--amber)' : ''}">
+              ${ic('bell', 'w-3 h-3')} ${s.reminder ? 'reminder on' : 'reminder off'}</button>
+            <div class="flex gap-1.5">
+              <button class="icon-btn sm" data-action="sub-edit" data-id="${s.id}">${ic('pencil','w-3.5 h-3.5')}</button>
+              <button class="icon-btn sm" data-action="sub-del" data-id="${s.id}">${ic('trash-2','w-3.5 h-3.5')}</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    };
+
+    const monthlyList = subs.filter(s => s.cycle !== 'annual');
+    const annualList = subs.filter(s => s.cycle === 'annual');
+
+    return shell(`
+      <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+        <div>
+          <div class="eyebrow mb-1">Obligations</div>
+          <h1 class="text-[26px] font-extrabold tracking-tight leading-none">Subscriptions</h1>
+        </div>
+        <button class="btn btn-primary" data-action="quick-add" data-tab="subscription">${ic('plus','w-4 h-4')}Add Subscription</button>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        ${kpiTile('Active Subscriptions', String(act.length), `${subs.length} total tracked`, 'repeat', 'neutral')}
+        ${kpiTile('Monthly Recurring Cost', money(monthly), 'incl. annual amortized', 'credit-card', 'red')}
+        ${kpiTile('Annualized Cost', money(monthly * 12), 'at current cadence', 'calendar', 'amber')}
+        ${kpiTile('Most Expensive', most ? money(most.amount) : money(0), most ? most.name : '—', 'crown', 'amber')}
+      </div>
+
+      <div class="mb-6">
+        ${sectionHead('Monthly Cycle', `<span class="chip">${monthlyList.length} items</span>`)}
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          ${monthlyList.length ? monthlyList.map(subCard).join('') : `<p class="muted text-[13px]">No monthly subscriptions.</p>`}
+        </div>
+      </div>
+
+      <div>
+        ${sectionHead('Annual Cycle', `<span class="chip">${annualList.length} items</span>`)}
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          ${annualList.length ? annualList.map(subCard).join('') : `<p class="muted text-[13px]">No annual subscriptions.</p>`}
+        </div>
+      </div>`);
+  },
+  mount(){}
+};
+
+/* ========== View 13: Settings ========== */
+VIEWS.settings = {
+  render(){
+    const s = DB.data.settings;
+    const currencies = [['USD','USD ($)'],['EUR','EUR (€)'],['GBP','GBP (£)'],['CAD','CAD ($)'],['AUD','AUD ($)'],['CUSTOM','Custom symbol']];
+    const catRow = c => `
+      <div class="list-row">
+        <span class="avatar-ic" style="background:${c.color}1f;color:${c.color}">${ic(c.icon || 'folder','w-4 h-4')}</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-[13px]">${esc(c.name)}</div>
+          <div class="text-[11.5px] muted">${c.kind} · ${c.need || 'no need/want'}${c.budget ? ` · target ${money(c.budget)}` : ''}</div>
+        </div>
+        <button class="icon-btn sm" data-action="cat-edit" data-id="${c.id}">${ic('pencil','w-3.5 h-3.5')}</button>
+        <button class="icon-btn sm" data-action="cat-del" data-id="${c.id}">${ic('trash-2','w-3.5 h-3.5')}</button>
+      </div>`;
+    return shell(`
+      <div class="mb-5">
+        <div class="eyebrow mb-1">System</div>
+        <h1 class="text-[26px] font-extrabold tracking-tight leading-none">Settings</h1>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-4 mb-6">
+        <div class="card p-4">
+          ${sectionHead('Currency & Formatting')}
+          <form data-form="settings" class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="fld">Display currency</label>
+              <select class="inp" name="currency">
+                ${currencies.map(([v,l]) => `<option value="${v}" ${s.currency===v?'selected':''}>${l}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="fld">Custom symbol (if Custom)</label>
+              <input class="inp" name="customSymbol" value="${esc(s.customSymbol || '$')}" maxlength="4">
+            </div>
+            <div>
+              <label class="fld">Monthly budget cycle start day</label>
+              <select class="inp" name="budgetStartDay">
+                ${Array.from({length:28}, (_,i) => i+1).map(d => `<option value="${d}" ${s.budgetStartDay===d?'selected':''}>Day ${d}</option>`).join('')}
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button class="btn btn-primary w-full justify-center" type="submit">${ic('save','w-4 h-4')}Save Preferences</button>
+            </div>
+            <p class="sm:col-span-2 text-[11.5px] muted text-wrap-pretty">Cycle day aligns budget periods and metric windows to your payday (e.g., 15 → periods run 15th–14th).</p>
+          </form>
+        </div>
+
+        <div class="card p-4">
+          ${sectionHead('Theme')}
+          <div class="grid grid-cols-3 gap-3">
+            ${[['light','Light Sand','sun'],['dark','Dark Plum','moon'],['contrast','High-Contrast Sand','contrast']].map(([id, label, icon]) => `
+              <button class="card-flat p-3.5 text-center cursor-pointer" data-action="set-theme" data-theme="${id}"
+                style="${s.theme===id ? 'border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)' : ''}">
+                <div class="flex justify-center mb-2 ${s.theme===id ? '' : 'opacity-65'}">${ic(icon,'w-5 h-5')}</div>
+                <div class="text-[12px] font-bold">${label}</div>
+                <div class="text-[10.5px] faint mt-0.5">${s.theme===id ? 'Active' : 'Click to apply'}</div>
+              </button>`).join('')}
+          </div>
+          <div class="eyebrow mt-5 mb-2">Expense Tags</div>
+          <div class="flex flex-wrap gap-2 mb-3">
+            ${s.tags.map(t => `<span class="chip">${esc(t)}
+              <button class="faint hover:text-[var(--red)] ml-0.5" data-action="tag-del" data-tag="${esc(t)}" aria-label="Remove tag">${ic('x','w-3 h-3')}</button></span>`).join('') || '<span class="muted text-[12.5px]">No tags yet.</span>'}
+          </div>
+          <form data-form="tag" class="flex gap-2">
+            <input class="inp" name="tag" placeholder="Add a global tag…" maxlength="24">
+            <button class="btn btn-primary" type="submit">${ic('plus','w-4 h-4')}</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card p-4">
+        ${sectionHead('Category Manager', `<button class="btn btn-sm btn-primary" data-action="quick-add" data-tab="category">${ic('plus','w-3.5 h-3.5')}New Category</button>`)}
+        <div class="grid sm:grid-cols-2 gap-2.5">
+          ${DB.data.categories.map(catRow).join('') || emptyState('No categories yet.', 'folder')}
+        </div>
+      </div>`);
+  },
+  mount(){}
+};
+
+/* ========== View 14: Data & Backup ========== */
+VIEWS.data = {
+  render(){
+    const d = DB.data;
+    let size = 0;
+    try { size = (localStorage.getItem(STORAGE_KEY) || '').length; } catch(e){}
+    const kb = (size/1024).toFixed(1);
+    return shell(`
+      <div class="mb-5">
+        <div class="eyebrow mb-1">System</div>
+        <h1 class="text-[26px] font-extrabold tracking-tight leading-none">Data & Backup</h1>
+        <p class="muted text-[13px] mt-1.5">Everything lives in your browser's localStorage — no servers, no accounts.</p>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        ${kpiTile('Transactions', String(d.transactions.length), 'ledger records', 'list', 'neutral')}
+        ${kpiTile('Accounts', String(d.accounts.length), 'money accounts', 'wallet', 'neutral')}
+        ${kpiTile('Categories', String(d.categories.length), `${d.settings.tags.length} tags`, 'tags', 'neutral')}
+        ${kpiTile('Storage Used', kb + ' KB', 'in localStorage', 'hard-drive', 'neutral')}
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-4 mb-6">
+        <div class="card p-4">
+          ${sectionHead('Export Data', ic('download','w-4 h-4'))}
+          <p class="text-[12.5px] muted mb-3 text-wrap-pretty">Download every transaction, account, category, bill, subscription and preference as JSON.</p>
+          <div class="flex flex-col gap-2.5">
+            <button class="btn btn-primary justify-center" data-action="export-json">${ic('file-json','w-4 h-4')}Download personal_finance_data.json</button>
+            <button class="btn justify-center" data-action="export-csv">${ic('file-spreadsheet','w-4 h-4')}Export transactions as CSV</button>
+          </div>
+        </div>
+
+        <div class="card p-4">
+          ${sectionHead('Import Data', ic('upload','w-4 h-4'))}
+          <div class="dropzone p-6 text-center cursor-pointer" id="dropzone" data-action="import-trigger">
+            <div class="faint mb-2 flex justify-center">${ic('file-up','w-6 h-6')}</div>
+            <div class="font-semibold text-[13.5px]">Drop a JSON backup here</div>
+            <div class="text-[12px] muted mt-1">or click to select a file — structure is validated before import</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-4" style="border-color:var(--red)">
+        ${sectionHead('Danger Zone', `<span class="badge badge-red">irreversible</span>`)}
+        <p class="text-[12.5px] muted mb-3 text-wrap-pretty">Factory reset purges all local data and re-initializes. Optionally reloads the sample demo portfolio.</p>
+        <button class="btn btn-danger justify-center w-full sm:w-auto" data-action="factory-reset">${ic('rotate-ccw','w-4 h-4')}Factory Reset Local Data</button>
+      </div>`);
+  },
+  mount(){
+    const dz = $('#dropzone');
+    if (!dz) return;
+    ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('hot'); }));
+    ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('hot'); }));
+    dz.addEventListener('drop', e => {
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) importFile(f);
+    });
+  }
+};
+/* ---------- Modal engine ---------- */
+let pendingConfirm = null;
+function openModal(html, narrow=false){
+  const root = $('#modal-root'), panel = $('#modal-panel');
+  panel.className = 'modal-panel' + (narrow ? ' narrow' : '');
+  panel.innerHTML = html;
+  root.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  icons(panel);
+  const first = panel.querySelector('input:not([type=hidden]), select, textarea');
+  if (first) setTimeout(() => { try { first.focus(); } catch(e){} }, 60);
+}
+function closeModal(){
+  $('#modal-root').classList.remove('open');
+  $('#modal-panel').innerHTML = '';
+  document.body.style.overflow = '';
+  pendingConfirm = null;
+}
+function modalHeader(title, sub=''){
+  return `<div class="flex items-start justify-between gap-4 px-5 pt-5 pb-3">
+    <div><div class="eyebrow mb-1">${sub || 'Quick Edit'}</div>
+      <h3 class="text-[17px] font-extrabold tracking-tight">${esc(title)}</h3></div>
+    <button class="icon-btn sm" data-action="modal-close" aria-label="Close">${ic('x','w-4 h-4')}</button>
+  </div>`;
+}
+function confirmModal(opts){
+  pendingConfirm = opts.onConfirm;
+  openModal(`
+    ${modalHeader(opts.title, 'Please confirm')}
+    <div class="px-5 pb-5">
+      <p class="text-[13.5px] muted text-wrap-pretty mb-4">${esc(opts.message)}</p>
+      ${opts.extraHtml || ''}
+      <div class="flex justify-end gap-2">
+        <button class="btn" data-action="modal-close">Cancel</button>
+        <button class="btn ${opts.danger ? 'btn-danger' : 'btn-primary'}" data-action="confirm-yes">${esc(opts.confirmText || 'Confirm')}</button>
+      </div>
+    </div>`, true);
+}
+
+/* ---------- Form partials ---------- */
+const kindOpts = kind => DB.data.categories.filter(c => !kind || c.kind === kind)
+  .map(c => `<option value="${c.id}" data-kind="${c.kind}">${esc(c.name)}</option>`).join('');
+const acctOpts = sel => DB.data.accounts.map(a =>
+  `<option value="${a.id}" ${sel===a.id?'selected':''}>${esc(a.name)} (${money(a.balance)})</option>`).join('');
+const typeOpts = sel => ACCOUNT_TYPES.map(t =>
+  `<option value="${t.id}" ${sel===t.id?'selected':''}>${t.label}</option>`).join('');
+
+function txFormHTML(t){
+  t = t || {};
+  const isEdit = !!t.id;
+  const type = t.type || 'expense';
+  const tagStr = (t.tags || []).join(', ');
+  const firstInc = DB.data.categories.find(c => c.kind === 'income');
+  const firstExp = DB.data.categories.find(c => c.kind === 'expense');
+  const defCat = t.categoryId || (type === 'income' ? (firstInc || {}).id : (firstExp || {}).id);
+  return `
+    ${modalHeader(isEdit ? 'Edit Transaction' : 'New Transaction', isEdit ? 'Update entry' : 'Quick Add')}
+    <form data-form="transaction" class="px-5 pb-5">
+      <input type="hidden" name="id" value="${t.id || ''}">
+      <div class="grid sm:grid-cols-2 gap-3.5">
+        <div>
+          <label class="fld">Type</label>
+          <select class="inp" name="type" data-sync-cat>
+            ${['expense','income','transfer'].map(v => `<option value="${v}" ${type===v?'selected':''}>${v[0].toUpperCase()+v.slice(1)}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="fld">Amount</label>
+          <input class="inp tnum" name="amount" type="number" step="0.01" min="0" required placeholder="0.00" value="${t.amount != null ? t.amount : ''}">
+        </div>
+        <div>
+          <label class="fld">Date</label>
+          <input class="inp" name="date" type="date" required value="${t.date || todayISO()}">
+        </div>
+        <div>
+          <label class="fld">Description / Merchant</label>
+          <input class="inp" name="desc" required maxlength="70" placeholder="e.g. Whole Foods Market" value="${esc(t.desc || '')}">
+        </div>
+        <div>
+          <label class="fld">Category</label>
+          <select class="inp" name="categoryId">
+            <optgroup label="Expense" ${type === 'income' ? 'hidden' : ''}>
+              <option value="" data-kind="expense">Choose…</option>
+              ${DB.data.categories.filter(c => c.kind === 'expense').map(c => `<option value="${c.id}" data-kind="expense" ${defCat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
+            </optgroup>
+            <optgroup label="Income" ${type === 'income' ? '' : 'hidden'}>
+              <option value="" data-kind="income">Choose…</option>
+              ${DB.data.categories.filter(c => c.kind === 'income').map(c => `<option value="${c.id}" data-kind="income" ${defCat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
+            </optgroup>
+          </select>
+        </div>
+        <div>
+          <label class="fld">Account</label>
+          <select class="inp" name="accountId" required>${acctOpts(t.accountId)}</select>
+        </div>
+        <div class="transfer-only" style="display:${type==='transfer'?'block':'none'}">
+          <label class="fld">To Account</label>
+          <select class="inp" name="toAccountId">${acctOpts(t.toAccountId || '')}</select>
+        </div>
+        <div>
+          <label class="fld">Tags (comma separated, optional)</label>
+          <input class="inp" name="tags" placeholder="e.g. reimbursable, work" value="${esc(tagStr)}">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button class="btn" type="button" data-action="modal-close">Cancel</button>
+        <button class="btn btn-primary" type="submit">${ic('check','w-4 h-4')}${isSaveSafe(t) ? 'Save Changes' : 'Add Transaction'}</button>
+      </div>
+    </form>`;
+}
+const isSaveSafe = t => !!t.id;
+
+function billFormHTML(b){
+  b = b || {};
+  return `
+    ${modalHeader(b.id ? 'Edit Bill' : 'New Bill', 'Recurring obligation')}
+    <form data-form="bill" class="px-5 pb-5">
+      <input type="hidden" name="id" value="${b.id || ''}">
+      <div class="grid sm:grid-cols-2 gap-3.5">
+        <div><label class="fld">Name</label>
+          <input class="inp" name="name" required maxlength="60" placeholder="e.g. Electricity" value="${esc(b.name || '')}"></div>
+        <div><label class="fld">Amount</label>
+          <input class="inp tnum" name="amount" type="number" step="0.01" min="0" required placeholder="0.00" value="${b.amount != null ? b.amount : ''}"></div>
+        <div><label class="fld">Due day of month</label>
+          <input class="inp tnum" name="dueDay" type="number" min="1" max="31" required value="${b.dueDay || 1}"></div>
+        <div><label class="fld">Category</label>
+          <select class="inp" name="categoryId">${kindOpts('expense')}</select></div>
+        <div><label class="fld">Paid from account</label>
+          <select class="inp" name="accountId">${acctOpts(b.accountId || '')}</select></div>
+        <div class="flex items-end">
+          <label class="list-row w-full cursor-pointer" style="margin-bottom:1px">
+            <input type="checkbox" class="accent-[var(--green)] w-4 h-4" name="autopay" ${b.autopay ? 'checked' : ''}>
+            <span class="text-[13px] font-semibold">Auto-pay enabled</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button class="btn" type="button" data-action="modal-close">Cancel</button>
+        <button class="btn btn-primary" type="submit">${ic('check','w-4 h-4')}Save Bill</button>
+      </div>
+    </form>`;
+}
+
+function subFormHTML(s){
+  s = s || {};
+  return `
+    ${modalHeader(s.id ? 'Edit Subscription' : 'New Subscription', 'Recurring service')}
+    <form data-form="subscription" class="px-5 pb-5">
+      <input type="hidden" name="id" value="${s.id || ''}">
+      <div class="grid sm:grid-cols-2 gap-3.5">
+        <div><label class="fld">Name</label>
+          <input class="inp" name="name" required maxlength="60" placeholder="e.g. Netflix" value="${esc(s.name || '')}"></div>
+        <div><label class="fld">Amount</label>
+          <input class="inp tnum" name="amount" type="number" step="0.01" min="0" required placeholder="0.00" value="${s.amount != null ? s.amount : ''}"></div>
+        <div><label class="fld">Billing cycle</label>
+          <select class="inp" name="cycle">
+            <option value="monthly" ${s.cycle==='monthly'?'selected':''}>Monthly</option>
+            <option value="annual" ${s.cycle==='annual'?'selected':''}>Annual</option>
+            <option value="weekly" ${s.cycle==='weekly'?'selected':''}>Weekly</option>
+          </select></div>
+        <div><label class="fld">Next renewal</label>
+          <input class="inp" name="next" type="date" required value="${s.next || todayISO()}"></div>
+        <div><label class="fld">Category</label>
+          <select class="inp" name="categoryId">${kindOpts('expense')}</select></div>
+        <div><label class="fld">Trial end (optional)</label>
+          <input class="inp" name="trialEnd" type="date" value="${s.trialEnd || ''}"></div>
+        <div class="sm:col-span-2 flex flex-col sm:flex-row gap-3">
+          <label class="list-row flex-1 cursor-pointer">
+            <input type="checkbox" class="accent-[var(--green)] w-4 h-4" name="active" ${s.active !== false ? 'checked' : ''}>
+            <span class="text-[13px] font-semibold">Active subscription</span>
+          </label>
+          <label class="list-row flex-1 cursor-pointer">
+            <input type="checkbox" class="accent-[var(--amber)] w-4 h-4" name="reminder" ${s.reminder !== false ? 'checked' : ''}>
+            <span class="text-[13px] font-semibold">Cancellation reminder</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button class="btn" type="button" data-action="modal-close">Cancel</button>
+        <button class="btn btn-primary" type="submit">${ic('check','w-4 h-4')}Save Subscription</button>
+      </div>
+    </form>`;
+}
+
+function catFormHTML(c, forcedKind){
+  c = c || {};
+  const kind = forcedKind || c.kind || 'expense';
+  const color = c.color || COLOR_SET[0];
+  return `
+    ${modalHeader(c.id ? 'Edit Category' : 'New Category', 'Custom category')}
+    <form data-form="category" class="px-5 pb-5">
+      <input type="hidden" name="id" value="${c.id || ''}">
+      <div class="grid sm:grid-cols-2 gap-3.5">
+        <div><label class="fld">Name</label>
+          <input class="inp" name="name" required maxlength="30" placeholder="e.g. Pet Care" value="${esc(c.name || '')}"></div>
+        <div><label class="fld">Kind</label>
+          <select class="inp" name="kind" ${forcedKind ? 'disabled' : ''}>
+            <option value="expense" ${kind==='expense'?'selected':''}>Expense</option>
+            <option value="income" ${kind==='income'?'selected':''}>Income</option>
+          </select>
+          ${forcedKind ? `<input type="hidden" name="kind" value="${kind}">` : ''}</div>
+        <div><label class="fld">Icon</label>
+          <select class="inp" name="icon">
+            ${ICONS.map(i => `<option value="${i}" ${c.icon===i?'selected':''}>${i}</option>`).join('')}
+          </select></div>
+        <div><label class="fld">Color accent</label>
+          <div class="flex flex-wrap gap-2 pt-1">
+            ${COLOR_SET.map(col => `
+              <label class="cursor-pointer" title="${col}">
+                <input type="radio" name="color" value="${col}" class="sr-only" ${color===col?'checked':''}>
+                <span class="block w-6 h-6 rounded-lg" style="background:${col};${color===col?'box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--accent)':''}"></span>
+              </label>`).join('')}
+          </div></div>
+        <div><label class="fld">Need / Want (expense only)</label>
+          <select class="inp" name="need">
+            <option value="need" ${c.need==='need'?'selected':''}>Need — essential</option>
+            <option value="want" ${c.need==='want'?'selected':''}>Want — lifestyle</option>
+            <option value="" ${!c.need?'selected':''}>Not classified</option>
+          </select></div>
+        <div><label class="fld">Monthly target limit</label>
+          <input class="inp tnum" name="budget" type="number" step="0.01" min="0" placeholder="0 = no limit" value="${c.budget != null ? c.budget : ''}"></div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button class="btn" type="button" data-action="modal-close">Cancel</button>
+        <button class="btn btn-primary" type="submit">${ic('check','w-4 h-4')}Save Category</button>
+      </div>
+    </form>`;
+}
+
+function acctFormHTML(a){
+  a = a || {};
+  return `
+    ${modalHeader(a.id ? 'Edit Account' : 'New Account', 'Custom account')}
+    <form data-form="account" class="px-5 pb-5">
+      <input type="hidden" name="id" value="${a.id || ''}">
+      <div class="grid sm:grid-cols-2 gap-3.5">
+        <div><label class="fld">Account name</label>
+          <input class="inp" name="name" required maxlength="40" placeholder="e.g. Travel Card" value="${esc(a.name || '')}"></div>
+        <div><label class="fld">Financial institution</label>
+          <input class="inp" name="institution" maxlength="40" placeholder="e.g. Chase Bank" value="${esc(a.institution || '')}"></div>
+        <div><label class="fld">Institution type</label>
+          <select class="inp" name="type">${typeOpts(a.type || 'checking')}</select></div>
+        <div><label class="fld">Current balance</label>
+          <input class="inp tnum" name="balance" type="number" step="0.01" required placeholder="0.00" value="${a.balance != null ? a.balance : ''}"></div>
+        <div class="sm:col-span-2">
+          <label class="list-row cursor-pointer">
+            <input type="checkbox" class="accent-[var(--green)] w-4 h-4" name="emergency" ${a.emergency ? 'checked' : ''}>
+            <span class="text-[13px] font-semibold">Count as emergency fund</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button class="btn" type="button" data-action="modal-close">Cancel</button>
+        <button class="btn btn-primary" type="submit">${ic('check','w-4 h-4')}Save Account</button>
+      </div>
+    </form>`;
+}
+
+function quickAddHTML(tab){
+  UI.quickTab = tab;
+  const tabs = [['transaction','Transaction'],['bill','Bill'],['subscription','Subscription'],['category','Category'],['account','Account']];
+  let body = '';
+  if (tab === 'transaction') body = txFormHTML({date: todayISO()});
+  else if (tab === 'bill') body = billFormHTML({});
+  else if (tab === 'subscription') body = subFormHTML({});
+  else if (tab === 'category') body = catFormHTML({kind: UI.quickKind || 'expense'});
+  else body = acctFormHTML({});
+  return `
+    <div class="flex items-start justify-between gap-4 px-5 pt-5 pb-2">
+      <div><div class="eyebrow mb-1">Quick Add · Ctrl/⌘ + K</div>
+        <h3 class="text-[17px] font-extrabold tracking-tight">Create New</h3></div>
+      <button class="icon-btn sm" data-action="modal-close">${ic('x','w-4 h-4')}</button>
+    </div>
+    <div class="px-5 pb-3 flex gap-1.5 flex-wrap" style="border-bottom:1px solid var(--border)">
+      ${tabs.map(([id, label]) => `<button class="tab-btn ${tab===id?'active':''}" data-action="quick-tab" data-tab="${id}">${label}</button>`).join('')}
+    </div>
+    <div class="pt-4">${body.replace(/<div class="flex items-start justify-between gap-4 px-5 pt-5 pb-3">[\s\S]*?<\/div>\s*<\/div>/, '')}</div>`;
+}
+function openQuickAdd(tab='transaction', opts={}){
+  UI.quickKind = opts.kind;
+  let html;
+  if (tab === 'transaction'){
+    html = txFormHTML({date: opts.date || todayISO(), type: opts.type || 'expense'});
+  } else if (tab === 'bill'){
+    html = billFormHTML(opts.date ? {dueDay: parseISO(opts.date).getDate()} : {});
+  } else if (tab === 'subscription') html = subFormHTML({});
+  else if (tab === 'category') html = catFormHTML({kind: opts.kind || 'expense'}, opts.kind);
+  else html = acctFormHTML({});
+  const tabRow = `<div class="flex items-start justify-between gap-4 px-5 pt-5 pb-2">
+      <div><div class="eyebrow mb-1">Quick Add · Ctrl/⌘ + K</div>
+        <h3 class="text-[17px] font-extrabold tracking-tight">Create New</h3></div>
+      <button class="icon-btn sm" data-action="modal-close">${ic('x','w-4 h-4')}</button>
+    </div>
+    <div class="px-5 pb-3 flex gap-1.5 flex-wrap" style="border-bottom:1px solid var(--border)">
+      ${[['transaction','Transaction'],['bill','Bill'],['subscription','Subscription'],['category','Category'],['account','Account']]
+        .map(([id, label]) => `<button class="tab-btn ${tab===id?'active':''}" data-action="quick-tab" data-tab="${id}">${label}</button>`).join('')}
+    </div>`;
+  openModal(tabRow + `<div class="px-5 pt-4 pb-2">${html}</div>`);
+}
+
+/* ---------- Day agenda modal ---------- */
+function openDayModal(dateISO){
+  const ev = eventsFor(dateISO);
+  const d = parseISO(dateISO);
+  const list = ev.length ? ev.map(e => {
+    const st = EV_STYLE[e.kind] || EV_STYLE.transfer;
+    return `<div class="list-row">
+      <span class="dot" style="background:${st.fg}"></span>
+      <div class="flex-1 min-w-0"><div class="font-semibold text-[13px] truncate">${esc(e.label)}</div></div>
+      <span class="tnum font-bold text-[13px]" style="color:${st.fg}">${money(e.amount)}</span>
+      ${e.ref.type === 'tx' ? `<button class="icon-btn sm" data-action="tx-edit" data-id="${e.ref.id}">${ic('pencil','w-3.5 h-3.5')}</button>` : ''}
+      ${e.ref.type === 'bill' ? `<button class="icon-btn sm" data-action="bill-edit" data-id="${e.ref.id}">${ic('pencil','w-3.5 h-3.5')}</button>` : ''}
+    </div>`;
+  }).join('') : `<div class="muted text-[13px] py-3">Nothing scheduled for this day.</div>`;
+  openModal(`
+    ${modalHeader(d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'}), 'Day Agenda')}
+    <div class="px-5 pb-5">
+      <div class="flex flex-col gap-2 mb-4">${list}</div>
+      <div class="flex flex-wrap gap-2 pt-4" style="border-top:1px solid var(--border)">
+        <button class="btn btn-primary" data-action="quick-add" data-tab="transaction" data-date="${dateISO}">${ic('plus','w-4 h-4')}Transaction</button>
+        <button class="btn" data-action="quick-add" data-tab="bill" data-date="${dateISO}">${ic('receipt','w-4 h-4')}Bill due this day</button>
+        <button class="btn" data-action="quick-add" data-tab="subscription" data-date="${dateISO}">${ic('repeat','w-4 h-4')}Subscription</button>
+      </div>
+    </div>`);
+}
+
+/* ---------- Data mutations ---------- */
+function applyTxToBalance(t, sign){
+  const a = acct(t.accountId);
+  if (a && t.type !== 'transfer') a.balance = Math.round((a.balance + (t.type === 'income' ? t.amount : -t.amount) * sign) * 100) / 100;
+  if (t.type === 'transfer'){
+    const from = acct(t.accountId), to = acct(t.toAccountId);
+    if (from) from.balance = Math.round((from.balance - t.amount * sign) * 100) / 100;
+    if (to) to.balance = Math.round((to.balance + t.amount * sign) * 100) / 100;
+  }
+}
+function saveTransaction(t){
+  const existing = DB.data.transactions.findIndex(x => x.id === t.id);
+  if (existing >= 0){
+    applyTxToBalance(DB.data.transactions[existing], -1);
+    DB.data.transactions[existing] = t;
+    applyTxToBalance(t, 1);
+    toast('Transaction updated');
+  } else {
+    DB.data.transactions.push(t);
+    applyTxToBalance(t, 1);
+    toast('Transaction added');
+  }
+  DB.save();
+}
+function deleteTransaction(id){
+  const i = DB.data.transactions.findIndex(t => t.id === id);
+  if (i < 0) return;
+  applyTxToBalance(DB.data.transactions[i], -1);
+  DB.data.transactions.splice(i, 1);
+  UI.tx.sel.delete(id);
+  DB.save();
+  toast('Transaction deleted');
+}
+function duplicateTransaction(id){
+  const t = DB.data.transactions.find(x => x.id === id);
+  if (!t) return;
+  const copy = Object.assign({}, t, {id: uid(), date: todayISO()});
+  saveTransaction(copy);
+  toast('Transaction duplicated');
+}
+function setBillPaid(id, paid){
+  const b = DB.data.bills.find(x => x.id === id);
+  if (!b) return;
+  const key = dayKey(UI.month);
+  b.paidPeriods = b.paidPeriods || [];
+  if (paid && !b.paidPeriods.includes(key)) b.paidPeriods.push(key);
+  if (!paid) b.paidPeriods = b.paidPeriods.filter(k => k !== key);
+  DB.save();
+  toast(paid ? `${b.name} marked paid` : `${b.name} marked unpaid`, paid ? 'ok' : '');
+}
+function importFile(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!DB.validate(parsed)){ toast('Invalid file: missing required data structure', 'err'); return; }
+      DB.data = DB.normalize(parsed);
+      DB.save();
+      applyTheme(DB.data.settings.theme);
+      UI.month = monthStart(new Date());
+      renderAll();
+      toast('Data imported successfully', 'ok');
+    } catch(e){ toast('Could not parse that JSON file', 'err'); }
+  };
+  reader.readAsText(file);
+}
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(DB.data, null, 2)], {type:'application/json'});
+  downloadBlob(blob, 'personal_finance_data.json');
+  toast('Backup downloaded', 'ok');
+}
+function exportCSV(){
+  const rows = [['Date','Description','Type','Category','Account','Amount','Tags']];
+  DB.data.transactions.forEach(t => rows.push([
+    t.date, t.desc, t.type, catName(t.categoryId), (acct(t.accountId)||{}).name || '',
+    (t.type === 'income' ? '' : '-') + t.amount, (t.tags||[]).join('|')
+  ]));
+  const csv = rows.map(r => r.map(v => {
+    const s = String(v == null ? '' : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\n');
+  downloadBlob(new Blob([csv], {type:'text/csv'}), 'personal_finance_transactions.csv');
+  toast('CSV exported', 'ok');
+}
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme || 'light');
+}
+/* ---------- Search ---------- */
+function renderSearchPop(){
+  const pop = $('#search-pop');
+  if (!pop) return;
+  const q = UI.searchQ.trim().toLowerCase();
+  if (!UI.searchOpen || q.length < 1){ pop.innerHTML = ''; return; }
+  const tx = DB.data.transactions.filter(t =>
+    t.desc.toLowerCase().includes(q) || catName(t.categoryId).toLowerCase().includes(q)).slice(0, 5);
+  const bills = DB.data.bills.filter(b => b.name.toLowerCase().includes(q)).slice(0, 3);
+  const accounts = DB.data.accounts.filter(a =>
+    a.name.toLowerCase().includes(q) || (a.institution||'').toLowerCase().includes(q)).slice(0, 3);
+  const subs = activeSubs().filter(s => s.name.toLowerCase().includes(q)).slice(0, 3);
+  const group = (title, items) => items.length ? `
+    <div class="eyebrow px-3 pt-2.5 pb-1">${title}</div>${items}` : '';
+  const html =
+    group('Transactions', tx.map(t => `
+      <div class="drop-item" data-action="search-go" data-kind="tx" data-id="${t.id}">
+        <span class="dot" style="background:${(cat(t.categoryId)||{}).color||'var(--muted)'}"></span>
+        <span class="flex-1 truncate font-medium">${esc(t.desc)}</span>
+        <span class="tnum muted text-[12px]">${fmtDateShort(t.date)}</span>
+        <b class="tnum text-[12.5px]" style="color:${txSignColor(t)}">${money(t.amount)}</b>
+      </div>`)) +
+    group('Bills', bills.map(b => `
+      <div class="drop-item" data-action="search-go" data-kind="bill" data-id="${b.id}">
+        <span class="dot" style="background:var(--amber)"></span>
+        <span class="flex-1 truncate font-medium">${esc(b.name)}</span>
+        <b class="tnum text-[12.5px]">${money(b.amount)}</b>
+      </div>`)) +
+    group('Accounts', accounts.map(a => `
+      <div class="drop-item" data-action="search-go" data-kind="account" data-id="${a.id}">
+        ${ic(acctType(a.type).icon, 'w-4 h-4 muted')}
+        <span class="flex-1 truncate font-medium">${esc(a.name)}</span>
+        <b class="tnum text-[12.5px]">${money(a.balance)}</b>
+      </div>`)) +
+    group('Subscriptions', subs.map(s => `
+      <div class="drop-item" data-action="search-go" data-kind="sub" data-id="${s.id}">
+        <span class="dot" style="background:var(--muted)"></span>
+        <span class="flex-1 truncate font-medium">${esc(s.name)}</span>
+        <b class="tnum text-[12.5px]">${money(s.amount)}</b>
+      </div>`));
+  pop.innerHTML = html ? `<div class="search-pop pop">${html}</div>` : '';
+  icons(pop);
+}
+
+/* ---------- Form submissions ---------- */
+document.addEventListener('submit', e => {
+  const form = e.target;
+  const kind = form.dataset.form;
+  if (!kind) return;
+  e.preventDefault();
+  const fd = new FormData(form);
+  const val = n => (fd.get(n) == null ? '' : String(fd.get(n)).trim());
+
+  if (kind === 'transaction'){
+    const amount = parseFloat(val('amount'));
+    if (!Number.isFinite(amount) || amount <= 0) return toast('Enter a valid amount', 'err');
+    const type = val('type');
+    let categoryId = val('categoryId');
+    if (type === 'transfer'){
+      categoryId = categoryId || (DB.data.categories.find(x => x.kind === 'expense') || {}).id || '';
+    } else {
+      const c = cat(categoryId);
+      if (!c || c.kind !== type) categoryId = (DB.data.categories.find(x => x.kind === type) || {}).id;
+      if (!categoryId) return toast('Create a matching category first', 'err');
+    }
+    const t = {
+      id: val('id') || uid(),
+      date: val('date') || todayISO(),
+      desc: val('desc') || 'Untitled',
+      amount: Math.round(amount * 100) / 100,
+      categoryId, accountId: val('accountId'),
+      type,
+      tags: val('tags') ? val('tags').split(',').map(s => s.trim()).filter(Boolean) : []
+    };
+    if (type === 'transfer') t.toAccountId = val('toAccountId');
+    saveTransaction(t);
+    closeModal(); renderAll();
+    return;
+  }
+
+  if (kind === 'bill'){
+    const amount = parseFloat(val('amount'));
+    if (!Number.isFinite(amount) || amount <= 0) return toast('Enter a valid amount', 'err');
+    const id = val('id');
+    const data = {
+      id: id || uid(), name: val('name') || 'Bill', amount: Math.round(amount*100)/100,
+      dueDay: clamp(parseInt(val('dueDay')) || 1, 1, 31), categoryId: val('categoryId'),
+      accountId: val('accountId'), autopay: fd.get('autopay') === 'on'
+    };
+    const i = DB.data.bills.findIndex(b => b.id === id);
+    if (i >= 0){ DB.data.bills[i] = Object.assign(DB.data.bills[i], data); toast('Bill updated'); }
+    else { data.paidPeriods = []; DB.data.bills.push(data); toast('Bill added'); }
+    DB.save(); closeModal(); renderAll();
+    return;
+  }
+
+  if (kind === 'subscription'){
+    const amount = parseFloat(val('amount'));
+    if (!Number.isFinite(amount) || amount <= 0) return toast('Enter a valid amount', 'err');
+    const id = val('id');
+    const data = {
+      id: id || uid(), name: val('name') || 'Subscription', amount: Math.round(amount*100)/100,
+      cycle: val('cycle'), next: val('next') || todayISO(), categoryId: val('categoryId'),
+      trialEnd: val('trialEnd') || undefined,
+      active: fd.get('active') === 'on', reminder: fd.get('reminder') === 'on'
+    };
+    const i = DB.data.subscriptions.findIndex(s => s.id === id);
+    if (i >= 0){ DB.data.subscriptions[i] = Object.assign(DB.data.subscriptions[i], data); toast('Subscription updated'); }
+    else { DB.data.subscriptions.push(data); toast('Subscription added'); }
+    DB.save(); closeModal(); renderAll();
+    return;
+  }
+
+  if (kind === 'category'){
+    const id = val('id');
+    const data = {
+      id: id || uid(), name: val('name') || 'Category', kind: val('kind') || 'expense',
+      icon: val('icon') || 'folder', color: val('color') || COLOR_SET[0],
+      need: val('need') || null, budget: parseFloat(val('budget')) || null
+    };
+    const i = DB.data.categories.findIndex(c => c.id === id);
+    if (i >= 0){ DB.data.categories[i] = Object.assign(DB.data.categories[i], data); toast('Category updated'); }
+    else { DB.data.categories.push(data); toast('Category created'); }
+    DB.save(); closeModal(); renderAll();
+    return;
+  }
+
+  if (kind === 'account'){
+    const balance = parseFloat(val('balance'));
+    if (!Number.isFinite(balance)) return toast('Enter a valid balance', 'err');
+    const id = val('id');
+    const data = {
+      id: id || uid(), name: val('name') || 'Account', institution: val('institution') || 'Custom',
+      type: val('type'), balance: Math.round(balance*100)/100, emergency: fd.get('emergency') === 'on'
+    };
+    const i = DB.data.accounts.findIndex(a => a.id === id);
+    if (i >= 0){ DB.data.accounts[i] = Object.assign(DB.data.accounts[i], data); toast('Account updated'); }
+    else { DB.data.accounts.push(data); toast('Account added'); }
+    DB.save(); closeModal(); renderAll();
+    return;
+  }
+
+  if (kind === 'settings'){
+    DB.data.settings.currency = val('currency') || 'USD';
+    DB.data.settings.customSymbol = val('customSymbol') || '$';
+    DB.data.settings.budgetStartDay = clamp(parseInt(val('budgetStartDay')) || 1, 1, 31);
+    DB.save(); renderAll();
+    toast('Preferences saved', 'ok');
+    return;
+  }
+
+  if (kind === 'tag'){
+    const t = val('tag');
+    if (!t) return;
+    if (DB.data.settings.tags.includes(t)) return toast('Tag already exists', 'err');
+    DB.data.settings.tags.push(t);
+    DB.save(); renderAll();
+    toast('Tag added', 'ok');
+    return;
+  }
+
+  if (kind === 'bulkcat'){
+    const cid = val('categoryId');
+    let n = 0;
+    DB.data.transactions.forEach(t => { if (UI.tx.sel.has(t.id)){ t.categoryId = cid; n++; } });
+    DB.save(); UI.tx.sel.clear(); closeModal(); renderAll();
+    toast(`${n} transaction${n===1?'':'s'} recategorized`, 'ok');
+  }
+});
+
+/* ---------- Click delegation ---------- */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) {
+    if (UI.searchOpen && !e.target.closest('#global-search')){ UI.searchOpen = false; renderSearchPop(); }
+    if (UI.notifOpen && !e.target.closest('#notif-pop') && !e.target.closest('[data-action="toggle-notif"]')){
+      UI.notifOpen = false; renderTopbar();
+    }
+    return;
+  }
+  const a = el.dataset.action;
+  const id = el.dataset.id;
+
+  switch(a){
+    case 'nav': setView(el.dataset.view); break;
+    case 'notif-go': setView(el.dataset.view); break;
+    case 'collapse-sidebar':
+      UI.sidebarCollapsed = !UI.sidebarCollapsed;
+      try { localStorage.setItem('PFM_PRO_SIDEBAR', UI.sidebarCollapsed ? '1' : '0'); } catch(err){}
+      renderSidebar(); break;
+    case 'mobile-sidebar':
+      UI.sidebarMobileOpen = !UI.sidebarMobileOpen; renderSidebar(); break;
+    case 'month-prev': UI.month = addMonths(UI.month, -1); renderAll(); break;
+    case 'month-next': UI.month = addMonths(UI.month, 1); renderAll(); break;
+    case 'month-today': UI.month = monthStart(new Date()); renderAll(); break;
+    case 'theme-toggle': {
+      const th = DB.data.settings.theme;
+      const next = th === 'dark' ? 'light' : 'dark';
+      DB.data.settings.theme = next; DB.save(); applyTheme(next); renderAll();
+      break;
+    }
+    case 'set-theme':
+      DB.data.settings.theme = el.dataset.theme; DB.save();
+      applyTheme(el.dataset.theme); renderAll();
+      toast(`Theme: ${el.dataset.theme}`);
+      break;
+    case 'quick-add': openQuickAdd(el.dataset.tab || 'transaction', {date: el.dataset.date, kind: el.dataset.kind, type: el.dataset.type}); break;
+    case 'quick-tab': openQuickAdd(el.dataset.tab); break;
+    case 'toggle-notif': UI.notifOpen = !UI.notifOpen; renderTopbar(); break;
+    case 'modal-close': closeModal(); break;
+    case 'confirm-yes': { const cb = pendingConfirm; closeModal(); if (cb) cb(); break; }
+
+    case 'cal-day': openDayModal(el.dataset.date); break;
+
+    case 'tx-edit': { const t = DB.data.transactions.find(x => x.id === id); if (t) openModal(txFormHTML(t)); break; }
+    case 'tx-del':
+      confirmModal({title:'Delete transaction?', message:'This will also reverse its effect on the account balance.',
+        confirmText:'Delete', danger:true, onConfirm(){ deleteTransaction(id); renderAll(); }});
+      break;
+    case 'tx-dup': duplicateTransaction(id); renderAll(); break;
+    case 'tx-sort': {
+      const k = el.dataset.key;
+      if (UI.tx.sort === k) UI.tx.dir = UI.tx.dir === 'asc' ? 'desc' : 'asc';
+      else { UI.tx.sort = k; UI.tx.dir = k === 'date' ? 'desc' : 'asc'; }
+      renderView(); break;
+    }
+    case 'tx-page': UI.tx.page = parseInt(el.dataset.page) || 1; renderView(); $('#view').scrollTop = 0; break;
+    case 'select-page': {
+      const f = UI.tx;
+      const perPage = 10;
+      const all = txFilters();
+      const page = all.slice((f.page-1)*perPage, f.page*perPage);
+      const allSel = page.every(t => f.sel.has(t.id));
+      page.forEach(t => allSel ? f.sel.delete(t.id) : f.sel.add(t.id));
+      renderView(); break;
+    }
+    case 'bulk-delete':
+      confirmModal({title:`Delete ${UI.tx.sel.size} transactions?`, message:'Selected entries will be removed and balances reversed.',
+        confirmText:'Delete all', danger:true, onConfirm(){
+          Array.from(UI.tx.sel).forEach(tid => deleteTransaction(tid));
+          UI.tx.sel.clear(); renderAll();
+        }});
+      break;
+    case 'bulk-categorize':
+      openModal(`${modalHeader('Recategorize selection', 'Bulk action')}
+        <form data-form="bulkcat" class="px-5 pb-5">
+          <label class="fld">Move ${UI.tx.sel.size} selected transactions to</label>
+          <select class="inp" name="categoryId">${DB.data.categories.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select>
+          <div class="flex justify-end gap-2 mt-5">
+            <button class="btn" type="button" data-action="modal-close">Cancel</button>
+            <button class="btn btn-primary" type="submit">Apply</button>
+          </div>
+        </form>`, true);
+      break;
+    case 'bulk-clear': UI.tx.sel.clear(); renderView(); break;
+
+    case 'acct-edit': { const acc = DB.data.accounts.find(x => x.id === id); if (acc) openModal(acctFormHTML(acc)); break; }
+    case 'acct-del': {
+      const acc = DB.data.accounts.find(x => x.id === id);
+      if (!acc) break;
+      confirmModal({title:`Delete ${acc.name}?`, message:'Its transactions will remain but show no account.',
+        confirmText:'Delete', danger:true, onConfirm(){
+          DB.data.accounts = DB.data.accounts.filter(x => x.id !== id);
+          DB.save(); renderAll(); toast('Account deleted');
+        }});
+      break;
+    }
+    case 'cat-edit': { const c = cat(id); if (c) openModal(catFormHTML(c)); break; }
+    case 'cat-del': {
+      const c = cat(id);
+      if (!c) break;
+      const used = DB.data.transactions.filter(t => t.categoryId === id).length;
+      confirmModal({title:`Delete ${c.name}?`, message:`${used} transaction${used===1?'':'s'} use this category — they will become uncategorized.`,
+        confirmText:'Delete', danger:true, onConfirm(){
+          DB.data.categories = DB.data.categories.filter(x => x.id !== id);
+          DB.save(); renderAll(); toast('Category deleted');
+        }});
+      break;
+    }
+    case 'bill-edit': { const b = DB.data.bills.find(x => x.id === id); if (b) openModal(billFormHTML(b)); break; }
+    case 'bill-del': {
+      const b = DB.data.bills.find(x => x.id === id);
+      if (!b) break;
+      confirmModal({title:`Delete ${b.name}?`, message:'This recurring bill will no longer appear in your calendar.',
+        confirmText:'Delete', danger:true, onConfirm(){
+          DB.data.bills = DB.data.bills.filter(x => x.id !== id);
+          DB.save(); renderAll(); toast('Bill deleted');
+        }});
+      break;
+    }
+    case 'sub-edit': { const s = DB.data.subscriptions.find(x => x.id === id); if (s) openModal(subFormHTML(s)); break; }
+    case 'sub-del': {
+      const s = DB.data.subscriptions.find(x => x.id === id);
+      if (!s) break;
+      confirmModal({title:`Delete ${s.name}?`, message:'The subscription will be removed from analytics.',
+        confirmText:'Delete', danger:true, onConfirm(){
+          DB.data.subscriptions = DB.data.subscriptions.filter(x => x.id !== id);
+          DB.save(); renderAll(); toast('Subscription deleted');
+        }});
+      break;
+    }
+    case 'sub-reminder': {
+      const s = DB.data.subscriptions.find(x => x.id === id);
+      if (s){ s.reminder = !s.reminder; DB.save(); renderAll(); toast(s.reminder ? 'Reminder enabled' : 'Reminder disabled'); }
+      break;
+    }
+    case 'tag-del':
+      DB.data.settings.tags = DB.data.settings.tags.filter(t => t !== el.dataset.tag);
+      DB.save(); renderAll();
+      break;
+
+    case 'export-json': exportJSON(); break;
+    case 'export-csv': exportCSV(); break;
+    case 'import-trigger': $('#import-file').click(); break;
+    case 'factory-reset':
+      confirmModal({title:'Factory reset local data?', danger:true, confirmText:'Purge everything',
+        message:'All transactions, accounts, categories and preferences stored in this browser will be destroyed.',
+        extraHtml:`<label class="list-row cursor-pointer mb-4">
+            <input type="checkbox" class="accent-[var(--green)] w-4 h-4" id="reset-demo" checked>
+            <span class="text-[13px] font-semibold">Reload sample demo data afterwards</span></label>`,
+        onConfirm(){
+          const demo = true;
+          DB.reset(demo);
+          UI.month = monthStart(new Date());
+          UI.tx = { q:'', cat:'all', acc:'all', type:'all', range:'month', from:'', to:'', sort:'date', dir:'desc', page:1, sel:new Set() };
+          applyTheme(DB.data.settings.theme);
+          setView('dashboard');
+          toast('Factory reset complete', 'ok');
+        }});
+      break;
+
+    case 'search-go': {
+      const kind = el.dataset.kind;
+      UI.searchOpen = false; UI.searchQ = '';
+      if (kind === 'tx'){
+        const t = DB.data.transactions.find(x => x.id === id);
+        UI.tx.q = t ? t.desc : ''; UI.tx.range = 'all'; UI.tx.page = 1;
+        setView('transactions');
+      } else if (kind === 'bill'){ setView('bills'); openModal(billFormHTML(DB.data.bills.find(x => x.id === id))); }
+      else if (kind === 'account'){ setView('accounts'); openModal(acctFormHTML(DB.data.accounts.find(x => x.id === id))); }
+      else if (kind === 'sub'){ setView('subscriptions'); openModal(subFormHTML(DB.data.subscriptions.find(x => x.id === id))); }
+      break;
+    }
+    default: break;
+  }
+});
+
+/* ---------- Change / input delegation ---------- */
+let refocusSelector = null;
+function rerenderKeepFocus(selector){
+  refocusSelector = selector;
+  renderView();
+  if (refocusSelector){
+    const el = $(refocusSelector);
+    if (el){ el.focus(); const v = el.value; el.value = ''; el.value = v; }
+    refocusSelector = null;
+  }
+}
+document.addEventListener('change', e => {
+  const t = e.target;
+
+  if (t.matches('[data-action="bill-paid-toggle"]')){
+    setBillPaid(t.dataset.id, t.checked);
+    renderAll();
+    return;
+  }
+  if (t.matches('[data-action="tx-select"]')){
+    if (t.checked) UI.tx.sel.add(t.dataset.id); else UI.tx.sel.delete(t.dataset.id);
+    renderView();
+    return;
+  }
+  if (t.matches('[data-filter]')){
+    UI.tx[t.dataset.filter] = t.value;
+    UI.tx.page = 1;
+    renderView();
+    return;
+  }
+  if (t.matches('[data-sync-cat]')){
+    const form = t.closest('form');
+    const catSel = form.querySelector('[name="categoryId"]');
+    const type = t.value;
+    if (catSel){
+      form.querySelectorAll('optgroup').forEach(g => {
+        g.hidden = type === 'income' ? g.label !== 'Income' : g.label !== 'Expense';
+      });
+      let firstValid = null;
+      const wanted = type === 'income' ? 'income' : 'expense';
+      Array.from(catSel.options).forEach(o => {
+        const kind = o.dataset.kind;
+        if (!kind){ o.hidden = false; return; }
+        const ok = kind === wanted;
+        o.hidden = !ok;
+        if (!ok && o.selected) o.selected = false;
+        if (ok && o.value && !firstValid) firstValid = o;
+      });
+      if (firstValid && !catSel.value) catSel.value = firstValid.value;
+      if (catSel.selectedOptions.length === 0 && firstValid) firstValid.selected = true;
+    }
+    const tr = form.querySelector('.transfer-only');
+    if (tr) tr.style.display = type === 'transfer' ? 'block' : 'none';
+    return;
+  }
+  if (t.id === 'import-file'){
+    const f = t.files && t.files[0];
+    if (f) importFile(f);
+    t.value = '';
+  }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'global-search'){
+    UI.searchQ = t.value; UI.searchOpen = true;
+    renderSearchPop();
+    return;
+  }
+  if (t.dataset.filter === 'q'){
+    UI.tx.q = t.value; UI.tx.page = 1;
+    rerenderKeepFocus('[data-filter="q"]');
+    return;
+  }
+  if (t.dataset.action === 'acct-search'){
+    UI.acctQ = t.value;
+    rerenderKeepFocus('[data-action="acct-search"]');
+    return;
+  }
+  if (t.dataset.action === 'inc-search'){
+    UI.incQ = t.value;
+    rerenderKeepFocus('[data-action="inc-search"]');
+    return;
+  }
+});
+
+/* ---------- Keyboard shortcuts ---------- */
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')){
+    e.preventDefault();
+    if ($('#modal-root').classList.contains('open')) closeModal();
+    else openQuickAdd(UI.quickTab || 'transaction');
+    return;
+  }
+  if (e.key === 'Escape'){
+    if ($('#modal-root').classList.contains('open')) closeModal();
+    else if (UI.searchOpen){ UI.searchOpen = false; renderSearchPop(); }
+    else if (UI.notifOpen){ UI.notifOpen = false; renderTopbar(); }
+    else if (UI.sidebarMobileOpen){ UI.sidebarMobileOpen = false; renderSidebar(); }
+    return;
+  }
+  if (e.key === 'Enter' && e.target.id === 'global-search'){
+    e.preventDefault();
+    const q = UI.searchQ.trim();
+    if (q){
+      UI.tx.q = q; UI.tx.range = 'all'; UI.tx.page = 1;
+      UI.searchOpen = false;
+      setView('transactions');
+    }
+  }
+});
+
+/* ---------- Resize (redraw charts) ---------- */
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { try { renderView(); } catch(e){} }, 220);
+});
+
+/* ---------- Boot ---------- */
+(function init(){
+  DB.load();
+  applyTheme(DB.data.settings.theme || 'light');
+  try { UI.sidebarCollapsed = localStorage.getItem('PFM_PRO_SIDEBAR') === '1'; } catch(e){}
+  const d = new Date();
+  UI.month = monthStart(d);
+  // Prefill month cursor into the current budget period
+  const pr = periodRange(monthStart(d));
+  if (d < pr.start || d >= pr.end) UI.month = monthStart(d);
+  renderAll();
+  setTimeout(() => {
+    const n = attentionItems().length;
+    if (n) setTimeout(() => toast(`${n} item${n===1?'':'s'} need attention — check the bell`, 'err'), 700);
+  }, 500);
+})();
+</script>
+</body>
+</html>
