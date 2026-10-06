@@ -303,6 +303,7 @@ label.fld{ display:block; font-size:11.5px; font-weight:600; color:var(--muted);
   <div id="sidebar-backdrop"></div>
   <div class="flex-1 flex flex-col min-w-0">
     <header id="topbar"></header>
+    <div id="storage-banner" role="alert" class="hidden"></div>
     <main id="view" class="flex-1 overflow-y-auto"></main>
   </div>
 </div>
@@ -558,6 +559,83 @@ function syncBalances(d){
 
 /* ---------- Persistent state ---------- */
 const STORAGE_KEY = 'PFM_PRO_DATA_v1';
+
+/* ---------- Storage health (Part C) -------------------------------
+   Persistence honesty: localStorage can be blocked (private windows), full
+   (quota) or read-only. When that happens the app keeps working in memory,
+   but nothing survives a reload — so we say so *persistently* instead of
+   dropping a toast that disappears. Two independent probes:
+     read  — getItem round-trip works
+     write — setItem does not throw
+   `ok` is only true when both pass; the reason string is kept for display.
+------------------------------------------------------------------- */
+const storageReason = e => {
+  const n = (e && e.name) || 'Error';
+  const m = (e && e.message) || '';
+  return n + (m ? ': ' + m : '');
+};
+const StorageWarn = {
+  readOk: true, writeOk: true, reason: '',
+  get ok(){ return this.readOk && this.writeOk; },
+  set(kind, ok, reason){
+    const prevOk = this.ok, prevReason = this.reason;
+    if (kind === 'read') this.readOk = !!ok; else this.writeOk = !!ok;
+    if (this.ok) this.reason = '';
+    else if (!ok) this.reason = reason || prevReason || 'localStorage is unavailable';
+    const changed = prevOk !== this.ok || prevReason !== this.reason;
+    if (!changed) return;
+    renderStorageWarning();
+    toast(this.ok ? 'Storage is working again — saving normally'
+                  : 'Storage unavailable — changes will not survive a reload',
+          this.ok ? 'ok' : 'err');
+  }
+};
+// Probe a real write + read round-trip through a scratch key.
+function probeStorage(){
+  let store = null;
+  try { store = window.localStorage; } catch(e){ return {read:false, write:false, reason:'localStorage is blocked (' + storageReason(e) + ')'}; }
+  if (!store) return {read:false, write:false, reason:'localStorage is not available in this browser'};
+  const k = 'PFM_PRO_PROBE';
+  let write = true, read = true, reason = '';
+  try { store.setItem(k, '1'); } catch(e){ write = false; reason = storageReason(e); }
+  if (write){
+    try { if (store.getItem(k) !== '1'){ read = false; reason = reason || 'reads returned nothing back'; } }
+    catch(e){ read = false; reason = reason || storageReason(e); }
+  }
+  try { store.removeItem(k); } catch(e){}
+  return {read, write, reason};
+}
+function refreshStorageHealth(){
+  const p = probeStorage();
+  StorageWarn.set('write', p.write, p.reason);
+  StorageWarn.set('read', p.read, p.reason);
+}
+// Persistent banner + topbar chip. Non-blocking: it never prevents use of the app.
+function renderStorageWarning(){
+  const banner = $('#storage-banner');
+  if (banner){
+    const ok = StorageWarn.ok;
+    banner.classList.toggle('hidden', ok);
+    if (ok) banner.innerHTML = '';
+    else {
+      banner.innerHTML = `
+        <div class="px-4 sm:px-6 py-2.5 flex flex-wrap items-center gap-2.5 text-[12.5px] leading-snug"
+             style="background:var(--red-soft);border-bottom:1px solid var(--red)">
+          <span class="shrink-0" style="color:var(--red)">${ic('alert-triangle','w-4 h-4')}</span>
+          <span class="flex-1 min-w-[240px] text-wrap-pretty">
+            <b>Not saving to this browser.</b> ${esc(StorageWarn.reason)} — edits are held in memory only and will be
+            lost on reload. Export a JSON backup to keep them.
+          </span>
+          <span class="flex gap-2 shrink-0">
+            <button class="btn btn-sm" data-action="export-json">${ic('download','w-3.5 h-3.5')}Export backup</button>
+            <button class="btn btn-sm" data-action="storage-retry">${ic('refresh-cw','w-3.5 h-3.5')}Retry</button>
+          </span>
+        </div>`;
+      icons(banner);
+    }
+  }
+  if (typeof DB !== 'undefined' && DB.data) renderTopbar();
+}
 
 const DB = {
   data: null,
