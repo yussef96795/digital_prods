@@ -494,11 +494,10 @@ function seedData(){
     {id:'bill_ins',   name:'Auto Insurance',     amount:128.00, dueDay:22, categoryId:'cat_trans', accountId:'acc_chk',  autopay:false},
     {id:'bill_loan',  name:'Student Loan',       amount:210.00, dueDay:25, categoryId:'cat_edu',   accountId:'acc_chk',  autopay:true}
   ];
-  // Deterministic paid state: bills already due this month are settled, except the
-  // electricity bill, which carries a deliberate overdue demo state once its day passes.
-  const key = `${y}-${m}`;
+  // Canonical paidPeriods keys ('YYYY-MM' of the month), intentionally leaving bill_elec unpaid as demo overdue state
+  const nowKey = dayKey(now);
   bills.forEach(b => {
-    b.paidPeriods = (b.dueDay < td && b.id !== 'bill_elec') ? [key] : [];
+    b.paidPeriods = (b.dueDay < td && b.id !== 'bill_elec') ? [nowKey] : [];
   });
 
   const subscriptions = [
@@ -518,6 +517,12 @@ function seedData(){
     {id:'goal_lap',  name:'New Laptop', target:2400, saved:1400, color:'#4a4f6b'}
   ];
 
+  // Every account's displayed balance must reconcile with its ledger movements:
+  // back out an openingBalance so balance == openingBalance + Σ movements(txns)
+  accounts.forEach(a => {
+    a.openingBalance = Math.round((a.balance - netMovementsFor(txns, a.id)) * 100) / 100;
+  });
+
   return {
     version: 1,
     settings: {
@@ -526,6 +531,29 @@ function seedData(){
     },
     accounts, categories, transactions: txns, bills, subscriptions, goals
   };
+}
+
+/* ---------- Balance reconciliation ---------- */
+// Signed net movement of one account from a transaction list.
+function netMovementsFor(txns, accountId){
+  return txns.reduce((s, t) => {
+    if (t.type === 'transfer'){
+      if (t.accountId === accountId) s -= t.amount;
+      if (t.toAccountId === accountId) s += t.amount;
+      return s;
+    }
+    if (t.accountId !== accountId) return s;
+    return s + (t.type === 'income' ? t.amount : -t.amount);
+  }, 0);
+}
+// Single place where account balances are (re)derived from opening balance + ledger.
+function syncBalances(d){
+  d = d || DB.data;
+  if (!d || !Array.isArray(d.accounts) || !Array.isArray(d.transactions)) return;
+  d.accounts.forEach(a => {
+    if (!Number.isFinite(a.openingBalance)) a.openingBalance = Number(a.balance) || 0;
+    a.balance = Math.round((a.openingBalance + netMovementsFor(d.transactions, a.id)) * 100) / 100;
+  });
 }
 
 /* ---------- Persistent state ---------- */
@@ -539,13 +567,14 @@ const DB = {
     if (raw){
       try {
         const parsed = JSON.parse(raw);
-        if (this.validate(parsed)){ this.data = this.normalize(parsed); return; }
+        if (this.validate(parsed)){ this.data = this.normalize(parsed); syncBalances(this.data); this.save(); return; }
       } catch(e){}
     }
     this.data = this.seed();
+    syncBalances(this.data);
     this.save();
   },
-  seed(){ const d = seedData(); this.data = d; return d; },
+  seed(){ const d = seedData(); this.data = d; syncBalances(d); return d; },
   save(){
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); }
     catch(e){ toast('Storage failed — data not saved', 'err'); }
@@ -557,13 +586,25 @@ const DB = {
   },
   normalize(d){
     const s = d.settings || {};
+    const txns = d.transactions || [];
+    const accounts = (d.accounts || []).map(a => {
+      // Legacy data has no openingBalance: back it out of the stored balance
+      // so existing figures are preserved while future edits reconcile.
+      if (!Number.isFinite(a.openingBalance)){
+        a = Object.assign({}, a, {
+          openingBalance: Math.round(((Number(a.balance) || 0) - netMovementsFor(txns, a.id)) * 100) / 100
+        });
+      }
+      return a;
+    });
+    const bills = (d.bills || []).map(b => Object.assign({}, b, {paidPeriods: normalizePaidPeriods(b.paidPeriods)}));
     return {
       version: 1,
       settings: Object.assign({currency:'USD', customSymbol:'$', budgetStartDay:1, theme:'light', tags:[]}, s),
-      accounts: d.accounts || [],
+      accounts,
       categories: d.categories || [],
-      transactions: d.transactions || [],
-      bills: d.bills || [],
+      transactions: txns,
+      bills,
       subscriptions: d.subscriptions || [],
       goals: d.goals || [],
       tasks: d.tasks || []
@@ -572,6 +613,7 @@ const DB = {
   reset(withDemo=true){
     try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
     this.data = withDemo ? seedData() : this.normalize({});
+    syncBalances(this.data);
     this.save();
   }
 };
@@ -623,6 +665,23 @@ const periodDays = cursor => {
   return Math.max(1, Math.round((end - start) / 86400000));
 };
 const dayKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+// paidPeriods stores canonical month keys (dayKey of any day in the month).
+// Migrates legacy keys ('2026-9' from the old seed, which was 0-based) to canonical form.
+function normalizePaidPeriods(arr){
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  arr.forEach(k => {
+    const m = /^(\d{4})-(\d{1,2})$/.exec(String(k).trim());
+    if (!m) return;
+    let month = parseInt(m[2], 10);
+    if (m[2].length === 1) month += 1; // legacy seed wrote 0-based month numbers
+    if (month >= 1 && month <= 12){
+      const key = `${m[1]}-${String(month).padStart(2,'0')}`;
+      if (!out.includes(key)) out.push(key);
+    }
+  });
+  return out;
+}
 
 /* ---------- Bills / subscriptions ---------- */
 function billDueDate(b, cursor){
@@ -1309,7 +1368,7 @@ VIEWS.today = {
     }).join('') : `<tr><td colspan="5">${emptyState('No transactions recorded today. Add one with Quick Add.', 'plus-circle')}</td></tr>`;
 
     const checklist = [
-      ...billsToday.map(b => ({kind:'bill', id:b.id, name:b.name, amount:b.amount, paid:(b.paidPeriods||[]).includes(today), autopay:b.autopay})),
+      ...billsToday.map(b => ({kind:'bill', id:b.id, name:b.name, amount:b.amount, paid:(b.paidPeriods||[]).includes(dayKey(new Date())), autopay:b.autopay})),
       ...subsToday.map(s => ({kind:'sub', id:s.id, name:s.name + ' (subscription)', amount:s.amount, paid:false, autopay:true}))
     ];
     const checkHtml = checklist.length ? checklist.map(c => `
@@ -1340,17 +1399,15 @@ VIEWS.today = {
       let inFlow = 0, outFlow = 0, items = [];
       DB.data.bills.forEach(b => {
         if (clampDay(d.getFullYear(), d.getMonth(), b.dueDay||1) === d.getDate()){
-          const paid = (b.paidPeriods||[]).includes(dISO);
+          const paid = (b.paidPeriods||[]).includes(dayKey(d));
           if (!paid){ outFlow += b.amount; items.push({dir:'out', label:b.name, amount:b.amount}); }
         }
       });
       activeSubs().forEach(s => {
         if (s.next === dISO){ outFlow += s.amount; items.push({dir:'out', label:s.name, amount:s.amount}); }
       });
-      const payday = d.getDate() === 1;
-      if (payday){ inFlow += 5200; items.push({dir:'in', label:'Salary — Acme Corp', amount:5200}); }
       const sal = DB.data.transactions.filter(t => t.date === dISO && t.type === 'income');
-      sal.forEach(t => { inFlow += t.amount; });
+      sal.forEach(t => { inFlow += t.amount; items.push({dir:'in', label:t.desc, amount:t.amount}); });
       timeline.push({d, dISO, inFlow, outFlow, items, today: i === 0});
     }
     const timelineHtml = timeline.map(t => {
@@ -1384,7 +1441,7 @@ VIEWS.today = {
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         ${kpiTile("Today's Transactions", String(txToday.length), `${money(inflow + outflow)} total volume`, 'receipt', 'neutral')}
-        ${kpiTile('Bills Due Today', String(billsToday.length), billsToday.length ? money(billsToday.reduce((s,b)=>s+b.amount,0)) : 'none', 'calendar-check', billsToday.some(b => !(b.paidPeriods||[]).includes(today)) ? 'red' : 'green')}
+        ${kpiTile('Bills Due Today', String(billsToday.length), billsToday.length ? money(billsToday.reduce((s,b)=>s+b.amount,0)) : 'none', 'calendar-check', billsToday.some(b => !(b.paidPeriods||[]).includes(dayKey(new Date()))) ? 'red' : 'green')}
         ${kpiTile('Tasks / Reminders', String(tasks.length), 'from needs-attention', 'bell-ring', tasks.length ? 'amber' : 'green')}
         ${kpiTile('Net Today Value', money(net, {signed:true}), `${money(inflow)} in · ${money(outflow)} out`, 'scale', net >= 0 ? 'green' : 'red')}
       </div>
@@ -2806,7 +2863,7 @@ function duplicateTransaction(id){
 function setBillPaid(id, paid){
   const b = DB.data.bills.find(x => x.id === id);
   if (!b) return;
-  const key = dayKey(UI.month);
+  const key = dayKey(new Date()); // bill check-offs always mean "current billing month"
   b.paidPeriods = b.paidPeriods || [];
   if (paid && !b.paidPeriods.includes(key)) b.paidPeriods.push(key);
   if (!paid) b.paidPeriods = b.paidPeriods.filter(k => k !== key);
