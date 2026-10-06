@@ -244,8 +244,12 @@ button.att-row:last-child{ border-bottom:none; }
 
 /* ===== Tables ===== */
 .tbl{ width:100%; border-collapse:separate; border-spacing:0; font-size:14px; }
+/* ===== Global stacking hierarchy (spec §4.1) =====
+   Base content 0–5 | Sticky nav/table heads 10 | Dropdown menus 30 |
+   Global popovers 50 | Mobile overlay 80 (drawer 81) | Modal 90 | Toasts 100 |
+   .skip-link 200 is an intentional a11y exception (must sit above everything). */
 .tbl thead th{ font-family:'"JetBrains Mono"',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--faint);
-  text-align:left; padding:10px 12px; background:var(--bg); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:2; white-space:nowrap; }
+  text-align:left; padding:10px 12px; background:var(--bg); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; white-space:nowrap; }
 .tbl tbody td{ padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
 .tbl tbody tr{ transition:background .12s ease; }
 .tbl tbody tr:hover{ background:var(--bg); }
@@ -262,7 +266,7 @@ button.att-row:last-child{ border-bottom:none; }
 /* ===== Sidebar ===== */
 #sidebar{ width:264px; flex:none; background:var(--sidebar); color:#E9E2DC; display:flex; flex-direction:column;
   background-image:linear-gradient(180deg, #2A0812 0%, #26060E 45%, #1F040B 100%);
-  transition:width .22s cubic-bezier(.22,1,.36,1), transform .25s cubic-bezier(.22,1,.36,1); z-index:40; }
+  transition:width .22s cubic-bezier(.22,1,.36,1), transform .25s cubic-bezier(.22,1,.36,1); z-index:81; }
 #sidebar.collapsed{ width:76px; }
 #sidebar .nav-label{ transition:opacity .16s ease, width .22s ease; overflow:hidden; white-space:nowrap; }
 #sidebar.collapsed .nav-label{ opacity:0; width:0; pointer-events:none; }
@@ -287,11 +291,18 @@ button.att-row:last-child{ border-bottom:none; }
 
 /* ===== Topbar ===== */
 #topbar{ background:color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--border); }
+  border-bottom:1px solid var(--border); position:relative; z-index:10; }
 .search-wrap{ position:relative; }
-.search-pop{ position:absolute; top:calc(100% + 8px); left:0; width:min(460px,86vw); max-height:380px; overflow:auto;
-  background:var(--card); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow); z-index:60; padding:6px; }
-.drop{ background:var(--card); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow); }
+.search-pop{ position:fixed; width:min(460px,86vw); max-height:380px; overflow:auto;
+  background:var(--card); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow); z-index:50; padding:6px; }
+/* Global popover overlay layer (spec §4.1 layer 50 / §4.2 — escapes topbar's
+   backdrop-filter stacking context and #app's overflow clipping) */
+#overlay-root{ position:fixed; inset:0; z-index:50; pointer-events:none; }
+#overlay-root > *{ pointer-events:auto; }
+#notif-pop{ position:fixed; width:340px; max-width:90vw; max-height:min(70vh,420px);
+  display:flex; flex-direction:column; }
+#notif-pop .pop-scroll{ overflow-y:auto; }
+.drop{ background:var(--card); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow); z-index:30; position:relative; }
 .drop-item{ display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:var(--r-md); cursor:pointer; font-size:14px;
   transition:background .12s ease; }
 button.drop-item{ width:100%; text-align:left; background:transparent; border:0; font:inherit; color:inherit; }
@@ -354,7 +365,7 @@ button.drop-item{ width:100%; text-align:left; background:transparent; border:0;
   border-radius:6px; margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 /* ===== Toast ===== */
-#toast-root{ position:fixed; right:20px; bottom:20px; z-index:120; display:flex; flex-direction:column; gap:9px; align-items:flex-end; }
+#toast-root{ position:fixed; right:20px; bottom:20px; z-index:100; display:flex; flex-direction:column; gap:9px; align-items:flex-end; }
 .toast{ display:flex; align-items:center; gap:10px; padding:11px 15px; border-radius:var(--r-lg); font-size:14px; font-weight:600;
   background:var(--accent); color:var(--accent-text); box-shadow:0 14px 34px -14px rgba(17,4,8,.6);
   animation:toastIn .26s cubic-bezier(.22,1,.36,1); max-width:min(420px,90vw); }
@@ -383,7 +394,7 @@ button.dropzone{ background:transparent; font:inherit; color:inherit; width:100%
   #sidebar .nav-group-title, #sidebar .brand-sub, #sidebar .nav-badge{ display:block !important; }
   #sidebar .nav-badge{ display:inline-flex !important; }
 }
-#sidebar-backdrop{ position:fixed; inset:0; background:rgba(10,9,8,.5); z-index:39; display:none; }
+#sidebar-backdrop{ position:fixed; inset:0; background:rgba(10,9,8,.5); z-index:80; display:none; }
 #sidebar-backdrop.show{ display:block; animation:fadeIn .18s ease; }
 </style>
 </head>
@@ -398,6 +409,7 @@ button.dropzone{ background:transparent; font:inherit; color:inherit; width:100%
   </div>
 </div>
 <div id="modal-root"><div class="modal-overlay" data-action="modal-close"></div><div id="modal-panel" class="modal-panel"></div></div>
+<div id="overlay-root" aria-live="off"></div>
 <div id="toast-root" aria-live="polite"></div>
 <input type="file" id="import-file" accept="application/json,.json" hidden>
 
@@ -414,6 +426,7 @@ let _uidSeq = 0;
 const uid = () => Date.now().toString(36) + (_uidSeq++).toString(36);
 const esc = (s='') => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+const intOr = (v, d) => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : d; };
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const parseISO = s => { const [y,m,d] = String(s).split('-').map(Number); return new Date(y, (m||1)-1, d||1); };
 const todayISO = () => iso(new Date());
@@ -488,30 +501,66 @@ function toast(msg, kind=''){
     setTimeout(() => el.remove(), 320); }, 3200);
 }
 
-/* ---------- Sample data ---------- */
-function seedData(){
-  const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth(), td = now.getDate();
-
-  const categories = [
-    {id:'cat_groc',  name:'Groceries',   icon:'shopping-cart', color:'#4f7a5e', kind:'expense', need:'need', budget:600},
-    {id:'cat_dine',  name:'Dining',      icon:'utensils',      color:'#8a4a1c', kind:'expense', need:'want', budget:280},
-    {id:'cat_house', name:'Housing',     icon:'home',          color:'#49111c', kind:'expense', need:'need', budget:1850},
-    {id:'cat_util',  name:'Utilities',   icon:'zap',           color:'#3e6b74', kind:'expense', need:'need', budget:240},
-    {id:'cat_trans', name:'Transport',   icon:'car',           color:'#5e503f', kind:'expense', need:'need', budget:300},
-    {id:'cat_health',name:'Health',      icon:'heart-pulse',   color:'#6d4a56', kind:'expense', need:'need', budget:160},
-    {id:'cat_ent',   name:'Entertainment',icon:'film',         color:'#57604f', kind:'expense', need:'want', budget:130},
-    {id:'cat_shop',  name:'Shopping',    icon:'shopping-bag',  color:'#a35a2a', kind:'expense', need:'want', budget:300},
-    {id:'cat_sub',   name:'Subscriptions',icon:'repeat',       color:'#4a4f6b', kind:'expense', need:'want', budget:120},
-    {id:'cat_trav',  name:'Travel',      icon:'plane',         color:'#5a7f8f', kind:'expense', need:'want', budget:250},
-    {id:'cat_pers',  name:'Personal',    icon:'sparkles',      color:'#a9927d', kind:'expense', need:'want', budget:120},
-    {id:'cat_edu',   name:'Education',   icon:'graduation-cap',color:'#7a5c2e', kind:'expense', need:'need', budget:150},
+/* ---------- Baseline category templates (shared by blank slate + demo seed) ---------- */
+function BASE_CATEGORIES(){
+  return [
+    {id:'cat_groc',  name:'Groceries',   icon:'shopping-cart', color:'#4f7a5e', kind:'expense', need:'need', budget:null},
+    {id:'cat_dine',  name:'Dining',      icon:'utensils',      color:'#8a4a1c', kind:'expense', need:'want', budget:null},
+    {id:'cat_house', name:'Housing',     icon:'home',          color:'#49111c', kind:'expense', need:'need', budget:null},
+    {id:'cat_util',  name:'Utilities',   icon:'zap',           color:'#3e6b74', kind:'expense', need:'need', budget:null},
+    {id:'cat_trans', name:'Transport',   icon:'car',           color:'#5e503f', kind:'expense', need:'need', budget:null},
+    {id:'cat_health',name:'Health',      icon:'heart-pulse',   color:'#6d4a56', kind:'expense', need:'need', budget:null},
+    {id:'cat_ent',   name:'Entertainment',icon:'film',         color:'#57604f', kind:'expense', need:'want', budget:null},
+    {id:'cat_shop',  name:'Shopping',    icon:'shopping-bag',  color:'#a35a2a', kind:'expense', need:'want', budget:null},
+    {id:'cat_sub',   name:'Subscriptions',icon:'repeat',       color:'#4a4f6b', kind:'expense', need:'want', budget:null},
+    {id:'cat_trav',  name:'Travel',      icon:'plane',         color:'#5a7f8f', kind:'expense', need:'want', budget:null},
+    {id:'cat_pers',  name:'Personal',    icon:'sparkles',      color:'#a9927d', kind:'expense', need:'want', budget:null},
+    {id:'cat_edu',   name:'Education',   icon:'graduation-cap',color:'#7a5c2e', kind:'expense', need:'need', budget:null},
     {id:'cat_auto',  name:'Auto-Investing',icon:'trending-up',  color:'#57604f', kind:'expense', need:null, budget:null},
     {id:'inc_sal',   name:'Salary',      icon:'briefcase',     color:'#2f6b4c', kind:'income',  need:null, budget:null},
     {id:'inc_free',  name:'Freelance',   icon:'laptop',        color:'#3e6b74', kind:'income',  need:null, budget:null},
     {id:'inc_inv',   name:'Investments', icon:'trending-up',   color:'#57604f', kind:'income',  need:null, budget:null},
     {id:'inc_oth',   name:'Other Income',icon:'plus-circle',   color:'#a9927d', kind:'income',  need:null, budget:null}
   ];
+}
+
+/* ---------- Blank slate generator (zero sample data) ---------- */
+function defaultSettings(){
+  return {
+    currency:'USD', customSymbol:'$', budgetStartDay:1, theme:'light',
+    savingsRateTarget:0, emergencyMonthsTarget:0, alertDays:0,
+    rolloverMode:'strict',
+    tags:['recurring','work','personal','vacation','reimbursable']
+  };
+}
+function createEmptyData(){
+  return {
+    version: 2,
+    settings: defaultSettings(),
+    accounts: [],
+    categories: BASE_CATEGORIES(),
+    transactions: [],
+    bills: [],
+    subscriptions: [],
+    goals: [],
+    tasks: []
+  };
+}
+
+/* ---------- Sample data (explicit demo mode only — never auto-seeded) ---------- */
+function seedData(){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth(), td = now.getDate();
+
+  const categories = BASE_CATEGORIES();
+  // Demo budgets → the Budget used ring / envelope rollover / accumulative
+  // carry are all meaningful on the demo ledger instead of silently 0.
+  const DEMO_BUDGETS = {
+    cat_house: 1900, cat_groc: 400, cat_trans: 230, cat_util: 270,
+    cat_dine: 100, cat_health: 80, cat_shop: 80, cat_ent: 50,
+    cat_pers: 70, cat_edu: 220, cat_sub: 60, cat_trav: 120
+  };
+  categories.forEach(c => { if (DEMO_BUDGETS[c.id] != null) c.budget = DEMO_BUDGETS[c.id]; });
 
   const accounts = [
     {id:'acc_chk',  name:'Everyday Checking', institution:'Chase Bank',     type:'checking',   balance:4280.50,  emergency:false},
@@ -522,6 +571,9 @@ function seedData(){
     {id:'acc_cryp', name:'Crypto Vault',       institution:'Coinbase',       type:'crypto',     balance:2350.00,  emergency:false},
     {id:'acc_cash', name:'Wallet Cash',        institution:'Personal',       type:'cash',       balance:320.00,   emergency:false}
   ];
+  // Demo accounts are manual (static) balances; initialBalance anchors a later
+  // opt-in switch to the calculated model without a jump.
+  accounts.forEach(a => { a.balanceMode = 'manual'; a.initialBalance = a.balance; });
 
   // Deterministic monthly ledger — fixed dates, merchants and amounts (no randomness).
   // A full month is pre-recorded (past + scheduled) so the headline ratios land the same
@@ -618,17 +670,256 @@ function seedData(){
 
   return {
     version: 2,
-    settings: {
-      currency:'USD', customSymbol:'$', budgetStartDay:1, theme:'light',
-      savingsRateTarget:20, emergencyMonthsTarget:6, alertDays:5,
-      tags:['recurring','work','personal','vacation','reimbursable']
-    },
+    settings: defaultSettings(),
     accounts, categories, transactions: txns, bills, subscriptions, goals
   };
 }
 
 /* ---------- Persistent state ---------- */
 const STORAGE_KEY = 'PFM_PRO_DATA_v1';
+const CRASH_BACKUP_KEY = 'PFM_PRO_DATA_CRASHED_BACKUP';
+const DATA_APP = 'PersonalFinanceDashboard';
+const DATA_VERSION = 2;
+
+/* ===== 3-phase import pipeline: structure -> coercion -> migration ===== */
+
+// Phase 1 — Structural audit. Returns {ok, data, errors}.
+// Accepts either the v2 export envelope ({app, version, exportedAt, data})
+// or a raw root-state payload (legacy exports / localStorage dumps).
+function structuralAudit(input){
+  const errors = [];
+  if (!input || typeof input !== 'object' || Array.isArray(input)){
+    return {ok:false, data:null, errors:['Root value must be a JSON object']};
+  }
+  let root = input;
+  if (input.data && typeof input.data === 'object'){
+    if (input.app && input.app !== DATA_APP)
+      errors.push(`Unexpected app identifier "${String(input.app).slice(0,40)}"`);
+    root = input.data;
+  }
+  if (!root || typeof root !== 'object' || Array.isArray(root))
+    return {ok:false, data:null, errors: errors.concat('Payload "data" must be an object')};
+
+  if (!root.settings || typeof root.settings !== 'object' || Array.isArray(root.settings))
+    errors.push('Missing required property: settings (object)');
+
+  const arrayKeys = ['categories','accounts','transactions','bills','subscriptions'];
+  arrayKeys.forEach(k => {
+    if (!Object.prototype.hasOwnProperty.call(root, k)) errors.push(`Missing required property: ${k}`);
+    else if (!Array.isArray(root[k])) errors.push(`Property "${k}" must be an array (received ${Array.isArray(root[k]) ? 'array' : typeof root[k]})`);
+  });
+  return {ok: errors.length === 0, data: root, errors};
+}
+
+// Phase 2 — Type coercion & sanitization. Repairs values, records warnings.
+// Never throws; malformed scalars degrade to safe defaults.
+function coerceData(root){
+  const warnings = [];
+  const today = todayISO();
+  const num = (v, field, ctx) => {
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    const n = parseFloat(v);
+    if (Number.isFinite(n)){ warnings.push(`${ctx}: coerced "${String(v).slice(0,24)}" to number`); return n; }
+    if (v != null && v !== '') warnings.push(`${ctx}: invalid ${field} defaulted to 0`);
+    return 0;
+  };
+  const dateStr = (v, ctx) => {
+    if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+    if (v == null || v === ''){ warnings.push(`${ctx}: missing date defaulted to today`); return today; }
+    const d = new Date(v);
+    if (!Number.isNaN(d.getTime())){ warnings.push(`${ctx}: date repaired to YYYY-MM-DD`); return iso(d); }
+    warnings.push(`${ctx}: invalid date defaulted to today`);
+    return today;
+  };
+  // Strip HTML/script from user text — defense against XSS in imported notes/payees.
+  const safeText = (v, max=120) => {
+    const s = String(v == null ? '' : v);
+    const cleaned = s.replace(/<\s*script[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, '')
+                     .replace(/<\/?[a-zA-Z][^>]*>/g, '')
+                     .replace(/javascript\s*:/gi, '')
+                     .replace(/on\w+\s*=/gi, '')
+                     .trim().slice(0, max);
+    if (cleaned !== s.trim()) warnings.push('Stripped HTML/script tags from text field');
+    return cleaned;
+  };
+  const idStr = (v, fallback) => {
+    const s = String(v == null ? '' : v).trim();
+    if (!s) return fallback;
+    if (/[<>"'&]/.test(s)){ warnings.push('Sanitized invalid characters in id field'); return fallback; }
+    return s.slice(0, 80);
+  };
+
+  const out = {version: DATA_VERSION, settings: {}, accounts: [], categories: [], transactions: [], bills: [], subscriptions: [], goals: [], tasks: []};
+
+  // settings
+  const s = (root.settings && typeof root.settings === 'object') ? root.settings : {};
+  const def = defaultSettings();
+  out.settings = Object.assign({}, def, {
+    currency: typeof s.currency === 'string' ? s.currency.slice(0,10) : def.currency,
+    customSymbol: typeof s.customSymbol === 'string' ? s.customSymbol.slice(0,4) : def.customSymbol,
+    budgetStartDay: clamp(parseInt(s.budgetStartDay) || 1, 1, 31),
+    theme: ['light','dark','contrast'].includes(s.theme) ? s.theme : 'light',
+    savingsRateTarget: clamp(intOr(s.savingsRateTarget, def.savingsRateTarget), 0, 100),
+    emergencyMonthsTarget: clamp(intOr(s.emergencyMonthsTarget, def.emergencyMonthsTarget), 0, 24),
+    alertDays: clamp(intOr(s.alertDays, def.alertDays), 0, 30),
+    rolloverMode: s.rolloverMode === 'accumulative' ? 'accumulative' : 'strict',
+    tags: Array.isArray(s.tags) ? s.tags.map(t => safeText(t, 24)).filter(Boolean).slice(0, 40) : def.tags.slice()
+  });
+
+  const validColor = c => typeof c === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(c);
+  const validIcon = i => typeof i === 'string' && ICONS.includes(i);
+
+  // categories
+  (Array.isArray(root.categories) ? root.categories : []).forEach((c, i) => {
+    const ctx = `category[${i}]`;
+    if (!c || typeof c !== 'object'){ warnings.push(`${ctx}: non-object dropped`); return; }
+    const kind = c.kind === 'income' ? 'income' : 'expense';
+    const color = validColor(c.color) ? c.color : COLOR_SET[i % COLOR_SET.length];
+    if (c.color && !validColor(c.color)) warnings.push(`${ctx}: invalid color replaced`);
+    const icon = validIcon(c.icon) ? c.icon : 'folder';
+    if (c.icon && !validIcon(c.icon)) warnings.push(`${ctx}: unknown icon replaced`);
+    const budget = num(c.budget, 'budget', ctx);
+    out.categories.push({
+      id: idStr(c.id, 'cat_' + uid()),
+      name: safeText(c.name, 30) || 'Category',
+      icon, color, kind,
+      need: c.need === 'need' || c.need === 'want' ? c.need : null,
+      budget: budget > 0 ? budget : null
+    });
+  });
+
+  // accounts
+  (Array.isArray(root.accounts) ? root.accounts : []).forEach((a, i) => {
+    const ctx = `account[${i}]`;
+    if (!a || typeof a !== 'object'){ warnings.push(`${ctx}: non-object dropped`); return; }
+    const balance = num(a.balance, 'balance', ctx);
+    out.accounts.push({
+      id: idStr(a.id, 'acc_' + uid()),
+      name: safeText(a.name, 40) || 'Account',
+      institution: safeText(a.institution, 40) || 'Custom',
+      type: ACCOUNT_TYPES.some(t => t.id === a.type) ? a.type : 'checking',
+      balance,
+      balanceMode: a.balanceMode === 'calculated' ? 'calculated' : 'manual',
+      // Legacy records carry no initialBalance — anchor to the current balance
+      // so an opt-in switch to 'calculated' starts without a jump.
+      initialBalance: (a.initialBalance == null || a.initialBalance === '')
+        ? balance : num(a.initialBalance, 'initialBalance', ctx),
+      emergency: !!a.emergency
+    });
+  });
+
+  // transactions
+  (Array.isArray(root.transactions) ? root.transactions : []).forEach((t, i) => {
+    const ctx = `transaction[${i}]`;
+    if (!t || typeof t !== 'object'){ warnings.push(`${ctx}: non-object dropped`); return; }
+    const type = ['income','expense','transfer'].includes(t.type)
+      ? t.type
+      : (typeof t.categoryId === 'string' && t.categoryId.startsWith('inc_') ? 'income' : 'expense');
+    const tx = {
+      id: idStr(t.id, uid()),
+      date: dateStr(t.date, ctx),
+      desc: safeText(t.desc, 70) || 'Untitled',
+      amount: Math.abs(num(t.amount, 'amount', ctx)),
+      categoryId: idStr(t.categoryId, ''),
+      accountId: idStr(t.accountId, ''),
+      type,
+      tags: Array.isArray(t.tags) ? t.tags.map(x => safeText(x, 24)).filter(Boolean).slice(0, 12) : []
+    };
+    if (type === 'transfer') tx.toAccountId = idStr(t.toAccountId, '');
+    out.transactions.push(tx);
+  });
+
+  // bills
+  (Array.isArray(root.bills) ? root.bills : []).forEach((b, i) => {
+    const ctx = `bill[${i}]`;
+    if (!b || typeof b !== 'object'){ warnings.push(`${ctx}: non-object dropped`); return; }
+    out.bills.push({
+      id: idStr(b.id, 'bill_' + uid()),
+      name: safeText(b.name, 60) || 'Bill',
+      amount: Math.abs(num(b.amount, 'amount', ctx)),
+      dueDay: clamp(parseInt(b.dueDay) || 1, 1, 31),
+      categoryId: idStr(b.categoryId, ''),
+      accountId: idStr(b.accountId, ''),
+      autopay: !!b.autopay,
+      paidPeriods: Array.isArray(b.paidPeriods) ? b.paidPeriods.map(String).filter(k => /^\d{4}-\d{1,2}$/.test(k)) : [],
+      // Legacy v1 flag — carried through coercion so migrateData can convert it.
+      ...(b.paid !== undefined ? {paid: b.paid === true} : {})
+    });
+  });
+
+  // subscriptions
+  (Array.isArray(root.subscriptions) ? root.subscriptions : []).forEach((x, i) => {
+    const ctx = `subscription[${i}]`;
+    if (!x || typeof x !== 'object'){ warnings.push(`${ctx}: non-object dropped`); return; }
+    const sub = {
+      id: idStr(x.id, 'sub_' + uid()),
+      name: safeText(x.name, 60) || 'Subscription',
+      amount: Math.abs(num(x.amount, 'amount', ctx)),
+      cycle: ['monthly','annual','weekly'].includes(x.cycle) ? x.cycle : 'monthly',
+      next: dateStr(x.next, ctx),
+      categoryId: idStr(x.categoryId, ''),
+      active: x.active !== false,
+      reminder: x.reminder !== false
+    };
+    if (x.trialEnd) sub.trialEnd = dateStr(x.trialEnd, ctx);
+    out.subscriptions.push(sub);
+  });
+
+  // goals
+  (Array.isArray(root.goals) ? root.goals : []).forEach((g, i) => {
+    const ctx = `goal[${i}]`;
+    if (!g || typeof g !== 'object'){ warnings.push(`${ctx}: non-object dropped`); return; }
+    out.goals.push({
+      id: idStr(g.id, 'goal_' + uid()),
+      name: safeText(g.name, 40) || 'Goal',
+      target: Math.abs(num(g.target, 'target', ctx)),
+      saved: Math.abs(num(g.saved, 'saved', ctx)),
+      color: validColor(g.color) ? g.color : COLOR_SET[i % COLOR_SET.length]
+    });
+  });
+
+  out.tasks = Array.isArray(root.tasks) ? root.tasks.slice(0, 200) : [];
+  return {data: out, warnings};
+}
+
+// Phase 3 — Schema migration: upgrade v1-era structures to the v2 standard.
+function migrateData(d){
+  const notes = [];
+  // v1: settings budgetStartDay/theme may be absent — coerceData already filled defaults.
+  // v1: accounts had a single mutable `balance`; default to manual mode and seed
+  // initialBalance so an opt-in switch to 'calculated' starts from a sane anchor.
+  d.accounts.forEach(a => {
+    if (!a.balanceMode){ a.balanceMode = 'manual'; notes.push(`account "${a.name}": balanceMode defaulted to manual`); }
+    if (!Number.isFinite(a.initialBalance)) a.initialBalance = a.balance || 0;
+  });
+  // v1: transfers had no toAccountId — route them to the first investment/savings account.
+  d.transactions.forEach(t => {
+    if (t.type === 'transfer' && !t.toAccountId){
+      const alt = d.accounts.find(a => a.type === 'investment' || a.type === 'savings');
+      if (alt){ t.toAccountId = alt.id; notes.push('transfer: missing toAccountId repaired'); }
+    }
+  });
+  // v1: bills used a boolean `paid`; v2 uses paidPeriods per month key.
+  d.bills.forEach(b => {
+    if (b.paid === true && !b.paidPeriods.length){
+      const now = new Date();
+      b.paidPeriods = [dayKey(now)];
+      notes.push(`bill "${b.name}": legacy paid flag migrated`);
+    }
+    delete b.paid;
+  });
+  d.version = DATA_VERSION;
+  return {data: d, notes};
+}
+
+// Full pipeline: audit -> coerce -> migrate. Returns staged data or errors.
+function prepareImport(input){
+  const audit = structuralAudit(input);
+  if (!audit.ok) return {ok:false, phase:'structure', errors:audit.errors, warnings:[]};
+  const coerced = coerceData(audit.data);
+  const migrated = migrateData(coerced.data);
+  return {ok:true, phase:'commit', data:migrated.data, warnings:coerced.warnings, notes:migrated.notes};
+}
 
 const DB = {
   data: null,
@@ -638,40 +929,85 @@ const DB = {
     if (raw){
       try {
         const parsed = JSON.parse(raw);
-        if (this.validate(parsed)){ this.data = this.normalize(parsed); return; }
+        const prep = prepareImport(parsed);
+        if (prep.ok){
+          this.data = prep.data;
+          this.save();
+          return;
+        }
       } catch(e){}
+      // Corrupt payload: preserve it for recovery instead of silently destroying it.
+      try { localStorage.setItem(CRASH_BACKUP_KEY, raw); } catch(e){}
+      this.data = createEmptyData();
+      this.save();
+      setTimeout(() => toast('Stored data was unreadable — a recovery copy was kept and a clean slate loaded', 'err'), 400);
+      return;
     }
-    this.data = this.seed();
+    // Zero sample data by default: clean slate with base category templates only.
+    this.data = createEmptyData();
     this.save();
   },
-  seed(){ const d = seedData(); this.data = d; return d; },
+  // Demo seed — executes ONLY via the explicit "Load Demo Data" UI action.
+  loadDemo(mode='replace'){
+    const demo = seedData();
+    if (mode === 'merge' && this.data){
+      const base = this.data;
+      const suffix = '_m' + Date.now().toString(36).slice(-4);
+      // Categories reuse an existing template when name+kind match; otherwise get fresh ids.
+      const catMap = {}, accMap = {};
+      demo.categories.forEach(c => {
+        const hit = base.categories.find(x => x.name.toLowerCase() === c.name.toLowerCase() && x.kind === c.kind);
+        if (hit) catMap[c.id] = hit.id;
+        else { catMap[c.id] = c.id + suffix; c.id = c.id + suffix; }
+      });
+      // Accounts never merge (balances are independent) — always re-ID.
+      demo.accounts.forEach(a => { accMap[a.id] = a.id + suffix; a.id = a.id + suffix; });
+      const rekey = x => x.id + suffix;
+      demo.transactions.forEach(t => {
+        t.id = rekey(t);
+        t.categoryId = catMap[t.categoryId] || t.categoryId;
+        t.accountId = accMap[t.accountId] || t.accountId;
+        t.toAccountId = accMap[t.toAccountId] || t.toAccountId;
+      });
+      demo.bills.forEach(b => {
+        b.id = rekey(b);
+        b.categoryId = catMap[b.categoryId] || b.categoryId;
+        b.accountId = accMap[b.accountId] || b.accountId;
+      });
+      demo.subscriptions.forEach(x => { x.id = rekey(x); x.categoryId = catMap[x.categoryId] || x.categoryId; });
+      demo.goals.forEach(g => { g.id = rekey(g); });
+      const newCats = demo.categories.filter(c => c.id.endsWith(suffix));
+      this.data = {
+        version: DATA_VERSION,
+        settings: Object.assign({}, base.settings),
+        accounts: base.accounts.concat(demo.accounts),
+        categories: base.categories.concat(newCats),
+        transactions: base.transactions.concat(demo.transactions),
+        bills: base.bills.concat(demo.bills),
+        subscriptions: base.subscriptions.concat(demo.subscriptions),
+        goals: (base.goals || []).concat(demo.goals),
+        tasks: (base.tasks || []).concat(demo.tasks || [])
+      };
+    } else {
+      this.data = demo;
+    }
+    recalcAllBalances();
+    this.save();
+  },
   save(){
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); }
-    catch(e){ toast('Storage failed — data not saved', 'err'); }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); return true; }
+    catch(e){ toast('Storage failed — data not saved', 'err'); return false; }
   },
+  // Structural validity (thin wrapper over the pipeline's phase 1 for callers
+  // that only need a boolean, e.g. legacy checks).
   validate(d){
-    if (!d || typeof d !== 'object') return false;
-    const ok = ['settings','accounts','categories','transactions','bills','subscriptions'];
-    return ok.every(k => Object.prototype.hasOwnProperty.call(d, k));
+    return structuralAudit(d).ok;
   },
-  normalize(d){
-    const s = d.settings || {};
-    return {
-      version: 2,
-      settings: Object.assign({currency:'USD', customSymbol:'$', budgetStartDay:1, theme:'light', tags:[],
-        savingsRateTarget:20, emergencyMonthsTarget:6, alertDays:5}, s),
-      accounts: d.accounts || [],
-      categories: d.categories || [],
-      transactions: d.transactions || [],
-      bills: d.bills || [],
-      subscriptions: d.subscriptions || [],
-      goals: d.goals || [],
-      tasks: d.tasks || []
-    };
-  },
-  reset(withDemo=true){
+  // Atomic factory reset: clear key -> blank slate in memory -> save baseline.
+  reset(withDemo=false){
     try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
-    this.data = withDemo ? seedData() : this.normalize({});
+    this.data = withDemo ? seedData() : createEmptyData();
+    if (withDemo) recalcAllBalances();
     this.save();
   }
 };
@@ -735,7 +1071,7 @@ function billStatus(b, cursor = UI.month){
   const due = billDueDate(b, cursor), now = new Date();
   if (due < new Date(now.getFullYear(), now.getMonth(), now.getDate())) return 'overdue';
   const diff = Math.round((due - now) / 86400000);
-  if (diff <= (DB.data.settings.alertDays || 5)) return 'due-soon';
+  if (diff <= (Number.isFinite(DB.data.settings.alertDays) ? DB.data.settings.alertDays : 5)) return 'due-soon';
   return 'upcoming';
 }
 function subMonthly(s){
@@ -744,6 +1080,32 @@ function subMonthly(s){
   return s.amount;
 }
 const activeSubs = () => DB.data.subscriptions.filter(s => s.active);
+
+/* ---------- Budget engine (dynamic monthly windowing + envelope rollover) ---------- */
+// Category Spent = ∑ expenses in the category for the target month's date window.
+function categorySpent(categoryId, cursor, txList){
+  const tx = txList || periodTx(cursor);
+  return tx.reduce((s,t) => s + (t.type === 'expense' && t.categoryId === categoryId ? t.amount : 0), 0);
+}
+// Rollover logic (envelope system):
+//   Strict (default) — each month evaluates independently against baseline targets.
+//   Accumulative     — Month n−1's unspent/overspent balance offsets Month n's budget.
+function categoryRollover(categoryId, cursor){
+  if ((DB.data.settings.rolloverMode || 'strict') !== 'accumulative') return 0;
+  const c = cat(categoryId);
+  if (!c || !c.budget) return 0;
+  return Math.round((c.budget - categorySpent(categoryId, addMonths(cursor, -1))) * 100) / 100;
+}
+// Category Balance = Category Budget Target (+ carryover) − Category Spent
+function categoryAvailable(categoryId, cursor, txList){
+  const c = cat(categoryId);
+  const spent = categorySpent(categoryId, cursor, txList);
+  if (!c) return {budget:0, spent, carry:0, available:0, balance: -spent};
+  const carry = categoryRollover(categoryId, cursor);
+  const budget = c.budget || 0;
+  const available = budget + carry;
+  return {budget, spent, carry, available, balance: available - spent};
+}
 
 /* ---------- Metrics (computed getters) ---------- */
 function metrics(){
@@ -758,9 +1120,10 @@ function metrics(){
 
   const cats = DB.data.categories;
   const budgetTotal = cats.reduce((s,c) => s + (c.budget || 0), 0);
-  const budgetSpent = cats.reduce((s,c) => s + tx.filter(t => t.type === 'expense' && t.categoryId === c.id)
-    .reduce((x,t) => x + t.amount, 0), 0);
-  const budgetLeft = budgetTotal - budgetSpent;
+  const budgetCarry = cats.reduce((s,c) => s + (categoryRollover(c.id, cur) || 0), 0);
+  const budgetAvailable = budgetTotal + budgetCarry;
+  const budgetSpent = cats.reduce((s,c) => s + categorySpent(c.id, cur, tx), 0);
+  const budgetLeft = budgetAvailable - budgetSpent;
 
   const accounts = DB.data.accounts;
   const assets = accounts.filter(a => a.balance > 0).reduce((s,a) => s + a.balance, 0);
@@ -806,7 +1169,7 @@ function metrics(){
 
   return {
     income, expense, net, savings, investTransfers,
-    budgetTotal, budgetSpent, budgetLeft,
+    budgetTotal, budgetCarry, budgetAvailable, budgetSpent, budgetLeft,
     assets, liabilities, netWorth, cashAccounts, creditBal, savingsInv, emergency,
     emergencyMonths,
     subMonthly: subCost, subAnnual: subCost * 12,
@@ -820,7 +1183,7 @@ function metrics(){
     upcomingBillsCount: upcoming30.length,
     debtRemaining: liabilities,
     savingsRate: income > 0 ? (savings / income) * 100 : 0,
-    budgetUsed: budgetTotal > 0 ? (budgetSpent / budgetTotal) * 100 : 0,
+    budgetUsed: budgetAvailable > 0 ? (budgetSpent / budgetAvailable) * 100 : 0,
     goalsInProgress,
     needs, wants,
     prevIncome: prevTx.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0),
@@ -840,7 +1203,7 @@ function attentionItems(){
       const diff = daysBetween(todayISOs, dueISO);
       if (diff < 0) items.push({level:'overdue', color:'var(--red)', title:`${b.name} is overdue`,
         sub:`${money(b.amount)} was due ${Math.abs(diff)} day${Math.abs(diff)===1?'':'s'} ago`, view:'bills'});
-      else if (diff <= (DB.data.settings.alertDays || 5)) items.push({level:'due-soon', color:'var(--amber)', title:`${b.name} due ${diff === 0 ? 'today' : 'in ' + diff + ' day' + (diff===1?'':'s')}`,
+      else if (diff <= (Number.isFinite(DB.data.settings.alertDays) ? DB.data.settings.alertDays : 5)) items.push({level:'due-soon', color:'var(--amber)', title:`${b.name} due ${diff === 0 ? 'today' : 'in ' + diff + ' day' + (diff===1?'':'s')}`,
         sub:`${money(b.amount)} · ${due.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`, view:'bills'});
     }
   });
@@ -853,13 +1216,13 @@ function attentionItems(){
       items.push({level:'due-soon', color:'var(--amber)', title:`${s.name} renews today`, sub:`${money(s.amount)} ${s.cycle}`, view:'subscriptions'});
   });
   DB.data.categories.filter(c => c.budget > 0).forEach(c => {
-    const spent = periodTx(UI.month).filter(t => t.type === 'expense' && t.categoryId === c.id)
-      .reduce((s,t) => s + t.amount, 0);
-    const p = (spent / c.budget) * 100;
+    const {spent, available, balance} = categoryAvailable(c.id, UI.month);
+    if (available <= 0){ return; }
+    const p = (spent / available) * 100;
     if (p >= 100) items.push({level:'overdue', color:'var(--red)', title:`${c.name} budget exceeded`,
-      sub:`${pct(p)} used — ${money(spent - c.budget)} over`, view:'budgets'});
+      sub:`${pct(p)} used — ${money(Math.abs(balance))} over`, view:'budgets'});
     else if (p >= 75) items.push({level:'due-soon', color:'var(--amber)', title:`${c.name} budget at ${pct(p)}`,
-      sub:`${money(c.budget - spent)} left of ${money(c.budget)}`, view:'budgets'});
+      sub:`${money(balance)} left of ${money(available)}`, view:'budgets'});
   });
   const order = {overdue:0, 'due-soon':1, alert:2};
   return items.sort((a,b) => order[a.level] - order[b.level]);
@@ -1176,7 +1539,6 @@ function renderTopbar(){
       <span class="absolute left-3 top-1/2 -translate-y-1/2 faint pointer-events-none">${ic('search','w-4 h-4')}</span>
       <input id="global-search" class="inp" style="padding-left:34px;border-radius:99px;background:var(--card)"
         placeholder="Search transactions, bills, accounts…" value="${esc(UI.searchQ)}" autocomplete="off">
-      <div id="search-pop"></div>
     </div>
 
     <div class="month-nav order-3 sm:order-none w-full sm:w-auto justify-center">
@@ -1196,27 +1558,11 @@ function renderTopbar(){
       <button class="btn btn-primary" data-action="quick-add" data-tab="transaction">${ic('plus','w-4 h-4')}<span class="hidden sm:inline">Quick Add</span></button>
 
       <div class="relative">
-        <button class="icon-btn" data-action="toggle-notif" aria-label="Notifications">
+        <button class="icon-btn" data-action="toggle-notif" aria-label="Notifications"${UI.notifOpen ? ' aria-expanded="true"' : ''}>
           ${ic('bell','w-4 h-4')}
           ${notif.length ? `<span class="absolute -top-1.5 -right-1.5 text-[10px] font-bold rounded-full px-1.5 py-[1px]"
             style="background:var(--red-fill);color:#fff">${notif.length}</span>` : ''}
         </button>
-        <div id="notif-pop" class="absolute right-0 top-[calc(100%+8px)] w-[340px] max-w-[90vw] ${UI.notifOpen ? '' : 'hidden'} drop z-50">
-          <div class="px-3.5 py-3 border-b hairline flex items-center justify-between">
-            <span class="font-bold text-sm">Needs Attention</span>
-            <span class="badge badge-red">${notif.length}</span>
-          </div>
-          <div class="p-2 max-h-[340px] overflow-y-auto">
-            ${notif.length ? notif.map(n => `
-              <button type="button" class="drop-item items-start" data-action="notif-go" data-view="${n.view}" title="${esc(n.title)}">
-                <span class="dot mt-1.5" style="background:${n.color}"></span>
-                <div class="min-w-0">
-                  <div class="font-semibold text-xs">${esc(n.title)}</div>
-                  <div class="text-xs muted truncate">${esc(n.sub)}</div>
-                </div>
-              </button>`).join('') : `<div class="p-4 text-center text-xs muted">Nothing needs attention.</div>`}
-          </div>
-        </div>
       </div>
 
       <button class="icon-btn" data-action="theme-toggle" aria-label="Toggle theme"
@@ -1226,6 +1572,7 @@ function renderTopbar(){
     </div>
   </div>`;
   icons(tb);
+  renderOverlayPops();
 }
 
 /* ---------- View router ---------- */
@@ -1343,13 +1690,13 @@ VIEWS.dashboard = {
         </div>`;
 
     // Hero stat row — four editorial cards (income / expenses / savings / rate)
-    const savTarget = DB.data.settings.savingsRateTarget || 20;
+    const savTarget = Number.isFinite(DB.data.settings.savingsRateTarget) ? DB.data.settings.savingsRateTarget : 0;
     const heroStats = [
       {label:'Income This Month', value:money(m.income), sub:`vs ${money(m.prevIncome)} last period`, tone:'green'},
       {label:'Expenses This Month', value:money(m.expense), sub:`vs ${money(m.prevExpense)} last period`, tone:'red'},
       {label:'Savings This Month', value:money(m.savings, {signed:true}), sub:`after ${money(m.investTransfers)} auto-invest`, tone:m.savings >= 0 ? 'green' : 'red'},
-      {label:'Savings Rate', value:pct(m.savingsRate,1), sub:m.savingsRate >= savTarget ? `above ${savTarget}% target` : `${savTarget}% target`,
-        tone:m.savingsRate >= savTarget ? 'green' : 'amber'}
+      {label:'Savings Rate', value:pct(m.savingsRate,1), sub:savTarget > 0 ? (m.savingsRate >= savTarget ? `above ${savTarget}% target` : `${savTarget}% target`) : 'no target set',
+        tone:savTarget > 0 ? (m.savingsRate >= savTarget ? 'green' : 'amber') : 'amber'}
     ].map(s => `
       <div class="hstat">
         <div class="eyebrow">${s.label}</div>
@@ -1358,15 +1705,18 @@ VIEWS.dashboard = {
       </div>`).join('');
 
     // Key Figures — the rest of the KPI matrix as a dotted-leader ledger index
+    const emTarget = Number.isFinite(DB.data.settings.emergencyMonthsTarget) ? DB.data.settings.emergencyMonthsTarget : 0;
     const ledgerItems = [
       ['Total Assets', money(m.assets), 'accounts in the green', 'green'],
       ['Total Liabilities', money(m.liabilities), 'owed across accounts', 'red'],
       ['Debt Remaining', money(m.debtRemaining), `${DB.data.accounts.filter(a=>a.balance<0).length} liability accounts`, 'red'],
       ['Emergency Fund', money(m.emergency), 'liquid safety net', 'green'],
-      ['Emergency Buffer', pct(clamp((m.emergencyMonths / (DB.data.settings.emergencyMonthsTarget || 6)) * 100, 0, 999), 0),
-        `${m.emergencyMonths.toFixed(1)} of ${DB.data.settings.emergencyMonthsTarget || 6} months covered`, m.emergencyMonths >= (DB.data.settings.emergencyMonthsTarget || 6) ? 'green' : 'amber'],
+      ['Emergency Buffer',
+        emTarget > 0 ? pct(clamp((m.emergencyMonths / emTarget) * 100, 0, 999), 0) : '—',
+        emTarget > 0 ? `${m.emergencyMonths.toFixed(1)} of ${emTarget} months covered` : 'no target set',
+        emTarget > 0 ? (m.emergencyMonths >= emTarget ? 'green' : 'amber') : 'amber'],
       ['Cash Flow', money(m.net, {signed:true}), 'income − expenses', m.net >= 0 ? 'green' : 'red'],
-      ['Remaining Budget', money(m.budgetLeft), `${money(m.budgetSpent)} of ${money(m.budgetTotal)} used`, m.budgetLeft >= 0 ? 'green' : 'red'],
+      ['Remaining Budget', money(m.budgetLeft), `${money(m.budgetSpent)} of ${money(m.budgetAvailable)} used`, m.budgetLeft >= 0 ? 'green' : 'red'],
       ['Budget Used', pct(m.budgetUsed,1), `${money(m.budgetSpent)} spent`, m.budgetUsed > 100 ? 'red' : (m.budgetUsed >= 75 ? 'amber' : 'green')],
       ['Bills Due Count', String(m.billsDueCount), m.overdueCount ? `${m.overdueCount} overdue` : 'none overdue', m.overdueCount ? 'red' : 'amber'],
       ['Upcoming Bills', String(m.upcomingBillsCount), 'next 30 days', 'amber'],
@@ -1384,13 +1734,13 @@ VIEWS.dashboard = {
 
     // Budget Health — ledger table sitting directly on the canvas
     const budgetRows = DB.data.categories.filter(c => c.budget > 0).map(c => {
-      const spent = m.tx.filter(t => t.type === 'expense' && t.categoryId === c.id).reduce((s,t) => s + t.amount, 0);
-      const p = c.budget ? (spent/c.budget)*100 : 0;
+      const {spent, available, carry} = categoryAvailable(c.id, cur, m.tx);
+      const p = available ? (spent/available)*100 : 0;
       const color = p > 100 ? 'var(--red)' : (p >= 75 ? 'var(--amber)' : 'var(--green)');
       return `<div class="lt-row">
-        <span class="lt-name"><span class="dot" style="background:${c.color}"></span><span>${esc(c.name)}</span></span>
+        <span class="lt-name"><span class="dot" style="background:${c.color}"></span><span>${esc(c.name)}</span>${carry ? `<span class="chip !py-0 !text-[10px]" title="Rolled over from last period">${carry > 0 ? '+' : '−'}${money(Math.abs(carry))}</span>` : ''}</span>
         <div class="progress lt-bar"><span style="width:${clamp(p,0,100)}%;background:${color}"></span></div>
-        <span class="lt-amt tnum">${money(spent)} <span class="faint">/ ${money(c.budget)}</span></span>
+        <span class="lt-amt tnum">${money(spent)} <span class="faint">/ ${money(available)}</span></span>
         <span class="lt-pct tnum" style="color:${color}">${pct(p,0)}</span>
       </div>`;
     }).join('');
@@ -1740,8 +2090,8 @@ VIEWS.accounts = {
             </div>
           </div>
         </td>
-        <td><span class="chip">${t.label}${a.emergency ? ' · emergency' : ''}</span></td>
-        <td class="text-right tnum font-bold" style="color:${balColor}">${money(a.balance)}</td>
+        <td><span class="chip"${a.balanceMode === 'calculated' ? ' title="Balance auto-recalculated: starting balance + all ledger movements"' : ''}>${t.label}${a.emergency ? ' · emergency' : ''}${a.balanceMode === 'calculated' ? ' · auto' : ''}</span></td>
+        <td class="text-right tnum font-bold" style="color:${balColor}"${a.balanceMode === 'calculated' ? ' title="Calculated from ledger"' : ''}>${money(a.balance)}</td>
         <td class="text-right">
           <div class="flex justify-end gap-1.5">
             <button class="icon-btn sm" data-action="acct-edit" data-id="${a.id}" title="Edit account">${ic('pencil','w-3.5 h-3.5')}</button>
@@ -2145,10 +2495,9 @@ VIEWS.budgets = {
     const m = metrics();
     const cats = DB.data.categories.filter(c => c.kind === 'expense');
     const cards = cats.length ? cats.map(c => {
-      const spent = m.tx.filter(t => t.type === 'expense' && t.categoryId === c.id).reduce((s,t) => s + t.amount, 0);
-      const total = c.budget || 0;
+      const {spent, available, carry, balance: remaining} = categoryAvailable(c.id, UI.month, m.tx);
+      const total = available;
       const p = total ? (spent/total)*100 : 0;
-      const remaining = total - spent;
       const color = p > 100 ? 'var(--red)' : (p >= 75 ? 'var(--amber)' : 'var(--green)');
       const status = !total ? 'no limit' : (p > 100 ? `over by ${money(Math.abs(remaining))}` : `${money(remaining)} left`);
       return `<div class="card card-hover p-4">
@@ -2176,7 +2525,8 @@ VIEWS.budgets = {
         <div class="progress"><span style="width:${clamp(p,0,100)}%;background:${color}"></span></div>
         <div class="flex items-center justify-between mt-2 text-xs">
           <span class="muted">${status}</span>
-          <span class="faint">${total ? 'monthly target' : 'add a target'}</span>
+          ${carry ? `<span class="faint" title="Unspent balance rolled over from the previous period">${carry > 0 ? 'rolled over' : 'overspend carried'} ${money(Math.abs(carry))}</span>`
+            : `<span class="faint">${c.budget ? 'monthly target' : 'add a target'}</span>`}
         </div>
       </div>`;
     }).join('') : emptyState('No expense categories. Create your first one.', 'target');
@@ -2192,8 +2542,9 @@ VIEWS.budgets = {
 
       <div class="card p-4 mb-6 flex flex-wrap items-center gap-6">
         <div class="flex-1 min-w-[160px]">
-          <div class="eyebrow mb-1">Total Allocated</div>
-          <div class="stat-value tnum">${money(m.budgetTotal)}</div>
+          <div class="eyebrow mb-1">${m.budgetCarry ? 'Allocated + Rollover' : 'Total Allocated'}</div>
+          <div class="stat-value tnum">${money(m.budgetAvailable)}</div>
+          ${m.budgetCarry ? `<div class="text-xs muted mt-1">${money(m.budgetTotal)} baseline ${m.budgetCarry >= 0 ? '+' : '−'} ${money(Math.abs(m.budgetCarry))} carried</div>` : ''}
         </div>
         <div class="flex-1 min-w-[160px]">
           <div class="eyebrow mb-1">Spent This Period</div>
@@ -2520,10 +2871,17 @@ VIEWS.settings = {
                 ${Array.from({length:28}, (_,i) => i+1).map(d => `<option value="${d}" ${s.budgetStartDay===d?'selected':''}>Day ${d}</option>`).join('')}
               </select>
             </div>
+            <div>
+              <label class="fld">Budget rollover mode</label>
+              <select class="inp" name="rolloverMode">
+                <option value="strict" ${s.rolloverMode !== 'accumulative' ? 'selected' : ''}>Strict — each month resets</option>
+                <option value="accumulative" ${s.rolloverMode === 'accumulative' ? 'selected' : ''}>Accumulative — carry balances forward</option>
+              </select>
+            </div>
             <div class="flex items-end">
               <button class="btn btn-primary w-full justify-center" type="submit">${ic('save','w-4 h-4')}Save Preferences</button>
             </div>
-            <p class="sm:col-span-2 text-xs muted text-wrap-pretty">Cycle day aligns budget periods and metric windows to your payday (e.g., 15 → periods run 15th–14th).</p>
+            <p class="sm:col-span-2 text-xs muted text-wrap-pretty">Cycle day aligns budget periods and metric windows to your payday (e.g., 15 → periods run 15th–14th). In accumulative mode, unspent (or overspent) category balances roll from the previous period into the next.</p>
           </form>
         </div>
 
@@ -2557,7 +2915,7 @@ VIEWS.settings = {
             <label class="fld">Target savings rate</label>
             <div class="relative">
               <input class="inp tnum" name="savingsRateTarget" type="number" min="0" max="100" step="1" inputmode="numeric"
-                value="${s.savingsRateTarget || 20}">
+                value="${Number.isFinite(s.savingsRateTarget) ? s.savingsRateTarget : 0}">
               <span class="absolute right-3 top-1/2 -translate-y-1/2 faint">%</span>
             </div>
             <p class="text-xs muted mt-1.5">The dashboard “Savings Rate” KPI is judged against this target.</p>
@@ -2565,8 +2923,8 @@ VIEWS.settings = {
           <div>
             <label class="fld">Emergency fund target</label>
             <div class="relative">
-              <input class="inp tnum" name="emergencyMonthsTarget" type="number" min="1" max="24" step="1" inputmode="numeric"
-                value="${s.emergencyMonthsTarget || 6}">
+              <input class="inp tnum" name="emergencyMonthsTarget" type="number" min="0" max="24" step="1" inputmode="numeric"
+                value="${Number.isFinite(s.emergencyMonthsTarget) ? s.emergencyMonthsTarget : 0}">
               <span class="absolute right-3 top-1/2 -translate-y-1/2 faint">mo</span>
             </div>
             <p class="text-xs muted mt-1.5">Months of spend your emergency fund should cover.</p>
@@ -2575,10 +2933,10 @@ VIEWS.settings = {
             <label class="fld">Bill alert threshold</label>
             <div class="relative">
               <input class="inp tnum" name="alertDays" type="number" min="0" max="30" step="1" inputmode="numeric"
-                value="${s.alertDays || 5}">
+                value="${Number.isFinite(s.alertDays) ? s.alertDays : 0}">
               <span class="absolute right-3 top-1/2 -translate-y-1/2 faint">days</span>
             </div>
-            <p class="text-xs muted mt-1.5">Bills due within this many days surface as “due soon”.</p>
+            <p class="text-xs muted mt-1.5">Bills due within this many days surface as “due soon”. Set 0 to flag only bills due today.</p>
           </div>
           <div class="sm:col-span-3 flex justify-end">
             <button class="btn btn-primary" type="submit">${ic('save','w-4 h-4')}Save Goals</button>
@@ -2620,40 +2978,41 @@ VIEWS.data = {
       <div class="grid lg:grid-cols-2 gap-4 mb-6">
         <div class="card p-4">
           ${sectionHead('Export Data', ic('download','w-4 h-4'))}
-          <p class="text-xs muted mb-3 text-wrap-pretty">Download every transaction, account, category, bill, subscription and preference as JSON.</p>
+          <p class="text-xs muted mb-3 text-wrap-pretty">Download every transaction, account, category, bill, subscription and preference as a versioned JSON backup.</p>
           <div class="flex flex-col gap-2.5">
-            <button class="btn btn-primary justify-center" data-action="export-json">${ic('file-json','w-4 h-4')}Download personal_finance_data.json</button>
+            <button class="btn btn-primary justify-center" data-action="export-json">${ic('file-json','w-4 h-4')}Download finance_backup_${todayISO()}.json</button>
             <button class="btn justify-center" data-action="export-csv">${ic('file-spreadsheet','w-4 h-4')}Export transactions as CSV</button>
           </div>
         </div>
 
         <div class="card p-4">
           ${sectionHead('Import Data', ic('upload','w-4 h-4'))}
+          <p class="text-xs muted mb-3 text-wrap-pretty">Three-phase validation: structure audit → type coercion → schema migration. Nothing is committed unless every phase passes.</p>
           <button type="button" class="dropzone p-6 text-center cursor-pointer" id="dropzone" data-action="import-trigger"
             aria-label="Import data — click or drop a JSON backup file here">
             <div class="faint mb-2 flex justify-center">${ic('file-up','w-6 h-6')}</div>
             <div class="font-semibold text-sm">Drop a JSON backup here</div>
-            <div class="text-xs muted mt-1">or click to select a file — structure is validated before import</div>
+            <div class="text-xs muted mt-1">or click to select a file</div>
           </button>
+        </div>
+      </div>
+
+      <div class="card p-4 mb-6">
+        ${sectionHead('Demo Mode', `<span class="chip">optional</span>`)}
+        <p class="text-xs muted mb-3 text-wrap-pretty">New instances start as a clean slate with base categories only. Load the sample portfolio to explore the app with realistic data — demo transactions are never added automatically.</p>
+        <div class="flex flex-col sm:flex-row gap-2.5">
+          <button class="btn justify-center" data-action="load-demo" data-mode="merge">${ic('layers','w-4 h-4')}Load Demo Data (merge)</button>
+          <button class="btn justify-center" data-action="load-demo" data-mode="replace">${ic('database-zap','w-4 h-4')}Load Demo Data (replace)</button>
         </div>
       </div>
 
       <div class="card p-4" style="border-color:var(--red)">
         ${sectionHead('Danger Zone', `<span class="badge badge-red">irreversible</span>`)}
-        <p class="text-xs muted mb-3 text-wrap-pretty">Factory reset purges all local data and re-initializes. Optionally reloads the sample demo portfolio.</p>
+        <p class="text-xs muted mb-3 text-wrap-pretty">Factory reset purges all local data and re-initializes to a clean slate with base categories (optionally followed by the demo portfolio).</p>
         <button class="btn btn-danger justify-center w-full sm:w-auto" data-action="factory-reset">${ic('rotate-ccw','w-4 h-4')}Factory Reset Local Data</button>
       </div>`);
   },
-  mount(){
-    const dz = $('#dropzone');
-    if (!dz) return;
-    ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('hot'); }));
-    ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('hot'); }));
-    dz.addEventListener('drop', e => {
-      const f = e.dataTransfer.files && e.dataTransfer.files[0];
-      if (f) importFile(f);
-    });
-  }
+  mount(){}
 };
 /* ---------- Modal engine ---------- */
 let pendingConfirm = null;
@@ -2910,6 +3269,7 @@ function catFormHTML(c, forcedKind){
 
 function acctFormHTML(a){
   a = a || {};
+  const mode = a.balanceMode || (a.id ? 'manual' : 'calculated');
   return `
     ${modalHeader(a.id ? 'Edit Account' : 'New Account', 'Custom account')}
     <form data-form="account" class="px-5 pb-5">
@@ -2921,8 +3281,21 @@ function acctFormHTML(a){
           <input class="inp" name="institution" maxlength="40" placeholder="e.g. Chase Bank" value="${esc(a.institution || '')}"></div>
         <div><label class="fld">Institution type</label>
           <select class="inp" name="type">${typeOpts(a.type || 'checking')}</select></div>
-        <div><label class="fld">Current balance</label>
-          <input class="inp tnum" name="balance" type="number" step="0.01" required placeholder="0.00" value="${a.balance != null ? a.balance : ''}"></div>
+        <div><label class="fld">Balance model</label>
+          <select class="inp" name="balanceMode" data-sync-mode>
+            <option value="manual" ${mode !== 'calculated' ? 'selected' : ''}>Manual — set the current balance</option>
+            <option value="calculated" ${mode === 'calculated' ? 'selected' : ''}>Calculated — derived from ledger</option>
+          </select></div>
+        <div class="mode-manual" style="display:${mode === 'calculated' ? 'none' : 'block'}">
+          <label class="fld">Current balance</label>
+          <input class="inp tnum" name="balance" type="number" step="0.01" placeholder="0.00" value="${a.balance != null ? a.balance : ''}"></div>
+        <div class="mode-calculated" style="display:${mode === 'calculated' ? 'block' : 'none'}">
+          <label class="fld">Starting balance</label>
+          <input class="inp tnum" name="initialBalance" type="number" step="0.01" placeholder="0.00"
+            value="${a.initialBalance != null ? a.initialBalance : (a.balance != null ? a.balance : '')}"></div>
+        <p class="sm:col-span-2 text-xs muted mode-calculated" style="display:${mode === 'calculated' ? 'block' : 'none'}">
+          Calculated balance = starting balance + inflows − outflows ± transfers, recomputed from the full ledger after every transaction change.
+        </p>
         <div class="sm:col-span-2">
           <label class="list-row cursor-pointer">
             <input type="checkbox" class="accent-[var(--green)] w-6 h-6" name="emergency" ${a.emergency ? 'checked' : ''}>
@@ -3005,36 +3378,51 @@ function openDayModal(dateISO){
     </div>`);
 }
 
-/* ---------- Data mutations ---------- */
-function applyTxToBalance(t, sign){
-  const a = acct(t.accountId);
-  if (a && t.type !== 'transfer') a.balance = Math.round((a.balance + (t.type === 'income' ? t.amount : -t.amount) * sign) * 100) / 100;
+/* ---------- Data mutations & account reconciliation ---------- */
+// Calculated Balance Engine:
+//   Current Balance = Initial Balance + Σ inflows − Σ outflows ± Σ transfers
+// Manual accounts keep their user-set balance untouched.
+function txEffectOnAccount(t, accountId){
+  if (!accountId) return 0;
+  const amt = Number(t.amount) || 0;
   if (t.type === 'transfer'){
-    const from = acct(t.accountId), to = acct(t.toAccountId);
-    if (from) from.balance = Math.round((from.balance - t.amount * sign) * 100) / 100;
-    if (to) to.balance = Math.round((to.balance + t.amount * sign) * 100) / 100;
+    if (t.accountId === accountId) return -amt;   // money leaves the source account
+    if (t.toAccountId === accountId) return amt;  // money arrives at the destination
+    return 0;
   }
+  if (t.accountId !== accountId) return 0;
+  return t.type === 'income' ? amt : -amt;
+}
+function recalcAccountBalance(a){
+  if (!a || a.balanceMode !== 'calculated') return a;
+  const net = DB.data.transactions.reduce((s, t) => s + txEffectOnAccount(t, a.id), 0);
+  a.balance = Math.round(((Number(a.initialBalance) || 0) + net) * 100) / 100;
+  return a;
+}
+// Reconciliation safeguard: any edit/deletion of past transactions (or import,
+// demo load, reset) triggers an immediate recalculation of every calculated account.
+function recalcAllBalances(){
+  if (!DB.data) return;
+  DB.data.accounts.forEach(recalcAccountBalance);
 }
 function saveTransaction(t){
   const existing = DB.data.transactions.findIndex(x => x.id === t.id);
   if (existing >= 0){
-    applyTxToBalance(DB.data.transactions[existing], -1);
     DB.data.transactions[existing] = t;
-    applyTxToBalance(t, 1);
     toast('Transaction updated');
   } else {
     DB.data.transactions.push(t);
-    applyTxToBalance(t, 1);
     toast('Transaction added');
   }
+  recalcAllBalances();
   DB.save();
 }
 function deleteTransaction(id){
   const i = DB.data.transactions.findIndex(t => t.id === id);
   if (i < 0) return;
-  applyTxToBalance(DB.data.transactions[i], -1);
   DB.data.transactions.splice(i, 1);
   UI.tx.sel.delete(id);
+  recalcAllBalances();
   DB.save();
   toast('Transaction deleted');
 }
@@ -3055,25 +3443,45 @@ function setBillPaid(id, paid){
   DB.save();
   toast(paid ? `${b.name} marked paid` : `${b.name} marked unpaid`, paid ? 'ok' : '');
 }
+// 3-phase import commit: nothing touches DB.data until every phase passes.
 function importFile(file){
   const reader = new FileReader();
+  reader.onerror = () => toast('Could not read that file', 'err');
   reader.onload = () => {
-    try {
-      const parsed = JSON.parse(reader.result);
-      if (!DB.validate(parsed)){ toast('Invalid file: missing required data structure', 'err'); return; }
-      DB.data = DB.normalize(parsed);
-      DB.save();
-      applyTheme(DB.data.settings.theme);
-      UI.month = monthStart(new Date());
-      renderAll();
-      toast('Data imported successfully', 'ok');
-    } catch(e){ toast('Could not parse that JSON file', 'err'); }
+    let parsed;
+    try { parsed = JSON.parse(reader.result); }
+    catch(e){ toast('Could not parse that JSON file — invalid JSON syntax', 'err'); return; }
+    const prep = prepareImport(parsed);
+    if (!prep.ok){
+      const shown = prep.errors.slice(0, 3).join(' · ');
+      toast(`Import rejected (${prep.phase} phase): ${shown}${prep.errors.length > 3 ? ' …' : ''}`, 'err');
+      return;
+    }
+    // Atomic commit
+    DB.data = prep.data;
+    recalcAllBalances();
+    DB.save();
+    applyTheme(DB.data.settings.theme);
+    UI.month = monthStart(new Date());
+    UI.tx = { q:'', cat:'all', acc:'all', type:'all', range:'month', from:'', to:'', sort:'date', dir:'desc', page:1, sel:new Set() };
+    renderAll();
+    const repaired = prep.warnings.length + prep.notes.length;
+    toast(repaired
+      ? `Data imported — ${repaired} value${repaired===1?'':'s'} repaired during migration`
+      : 'Data imported successfully', 'ok');
   };
   reader.readAsText(file);
 }
+// Export engine: {app, version, exportedAt, data} envelope.
 function exportJSON(){
-  const blob = new Blob([JSON.stringify(DB.data, null, 2)], {type:'application/json'});
-  downloadBlob(blob, 'personal_finance_data.json');
+  const payload = {
+    app: DATA_APP,
+    version: DATA_VERSION,
+    exportedAt: new Date().toISOString(),
+    data: DB.data
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  downloadBlob(blob, `finance_backup_${todayISO()}.json`);
   toast('Backup downloaded', 'ok');
 }
 function exportCSV(){
@@ -3099,12 +3507,10 @@ function downloadBlob(blob, filename){
 function applyTheme(theme){
   document.documentElement.setAttribute('data-theme', theme || 'light');
 }
-/* ---------- Search ---------- */
-function renderSearchPop(){
-  const pop = $('#search-pop');
-  if (!pop) return;
+/* ---------- Global popovers (rendered into #overlay-root, layer 50) ---------- */
+function searchPopHTML(){
   const q = UI.searchQ.trim().toLowerCase();
-  if (!UI.searchOpen || q.length < 1){ pop.innerHTML = ''; return; }
+  if (!UI.searchOpen || q.length < 1) return '';
   const tx = DB.data.transactions.filter(t =>
     t.desc.toLowerCase().includes(q) || catName(t.categoryId).toLowerCase().includes(q)).slice(0, 5);
   const bills = DB.data.bills.filter(b => b.name.toLowerCase().includes(q)).slice(0, 3);
@@ -3139,9 +3545,58 @@ function renderSearchPop(){
         <span class="flex-1 truncate font-medium">${esc(s.name)}</span>
         <b class="tnum text-xs">${money(s.amount)}</b>
       </button>`));
-  pop.innerHTML = html ? `<div class="search-pop pop">${html}</div>` : '';
-  icons(pop);
+  return html ? `<div id="search-pop" class="search-pop pop">${html}</div>` : '';
 }
+function notifPopHTML(){
+  if (!UI.notifOpen) return '';
+  const notif = attentionItems();
+  return `<div id="notif-pop" class="drop pop" role="region" aria-label="Notifications">
+    <div class="px-3.5 py-3 border-b hairline flex items-center justify-between">
+      <span class="font-bold text-sm">Needs Attention</span>
+      <span class="badge badge-red">${notif.length}</span>
+    </div>
+    <div class="p-2 pop-scroll">
+      ${notif.length ? notif.map(n => `
+        <button type="button" class="drop-item items-start" data-action="notif-go" data-view="${n.view}" title="${esc(n.title)}">
+          <span class="dot mt-1.5" style="background:${n.color}"></span>
+          <div class="min-w-0">
+            <div class="font-semibold text-xs">${esc(n.title)}</div>
+            <div class="text-xs muted truncate">${esc(n.sub)}</div>
+          </div>
+        </button>`).join('') : `<div class="p-4 text-center text-xs muted">Nothing needs attention.</div>`}
+    </div>
+  </div>`;
+}
+// Position popovers against their triggers (fixed placement — no clipped ancestors).
+function positionOverlayPops(){
+  const np = $('#notif-pop');
+  if (np){
+    const trig = document.querySelector('[data-action="toggle-notif"]');
+    if (trig){
+      const r = trig.getBoundingClientRect(), w = np.offsetWidth;
+      np.style.left = clamp(r.right - w, 8, Math.max(8, window.innerWidth - w - 8)) + 'px';
+      np.style.top = Math.round(r.bottom + 8) + 'px';
+    }
+  }
+  const sp = $('#search-pop');
+  if (sp){
+    const trig = $('#global-search');
+    if (trig){
+      const r = trig.getBoundingClientRect(), w = sp.offsetWidth;
+      sp.style.left = clamp(r.left, 8, Math.max(8, window.innerWidth - w - 8)) + 'px';
+      sp.style.top = Math.round(r.bottom + 8) + 'px';
+    }
+  }
+}
+function renderOverlayPops(){
+  const root = $('#overlay-root');
+  if (!root) return;
+  root.innerHTML = notifPopHTML() + searchPopHTML();
+  positionOverlayPops();
+  icons(root);
+  decorateA11y(root);
+}
+function renderSearchPop(){ renderOverlayPops(); }
 
 /* ---------- Form submissions ---------- */
 document.addEventListener('submit', e => {
@@ -3227,16 +3682,30 @@ document.addEventListener('submit', e => {
   }
 
   if (kind === 'account'){
-    const balance = parseFloat(val('balance'));
-    if (!Number.isFinite(balance)) return toast('Enter a valid balance', 'err');
     const id = val('id');
+    const mode = val('balanceMode') === 'calculated' ? 'calculated' : 'manual';
+    const existing = id ? DB.data.accounts.find(a => a.id === id) : null;
+    let balance, initialBalance;
+    if (mode === 'calculated'){
+      const init = parseFloat(val('initialBalance'));
+      if (!Number.isFinite(init)) return toast('Enter a valid starting balance', 'err');
+      initialBalance = Math.round(init * 100) / 100;
+      balance = initialBalance; // re-derived from the ledger below
+    } else {
+      const bal = parseFloat(val('balance'));
+      if (!Number.isFinite(bal)) return toast('Enter a valid balance', 'err');
+      balance = Math.round(bal * 100) / 100;
+      initialBalance = existing && Number.isFinite(existing.initialBalance) ? existing.initialBalance : balance;
+    }
     const data = {
       id: id || uid(), name: val('name') || 'Account', institution: val('institution') || 'Custom',
-      type: val('type'), balance: Math.round(balance*100)/100, emergency: fd.get('emergency') === 'on'
+      type: val('type'), balanceMode: mode, initialBalance, balance,
+      emergency: fd.get('emergency') === 'on'
     };
     const i = DB.data.accounts.findIndex(a => a.id === id);
     if (i >= 0){ DB.data.accounts[i] = Object.assign(DB.data.accounts[i], data); toast('Account updated'); }
     else { DB.data.accounts.push(data); toast('Account added'); }
+    if (mode === 'calculated') recalcAccountBalance(DB.data.accounts.find(a => a.id === data.id));
     DB.save(); closeModal(); renderAll();
     return;
   }
@@ -3245,15 +3714,16 @@ document.addEventListener('submit', e => {
     DB.data.settings.currency = val('currency') || 'USD';
     DB.data.settings.customSymbol = val('customSymbol') || '$';
     DB.data.settings.budgetStartDay = clamp(parseInt(val('budgetStartDay')) || 1, 1, 31);
+    DB.data.settings.rolloverMode = val('rolloverMode') === 'accumulative' ? 'accumulative' : 'strict';
     DB.save(); renderAll();
     toast('Preferences saved', 'ok');
     return;
   }
 
   if (kind === 'settings-goals'){
-    DB.data.settings.savingsRateTarget = clamp(parseInt(val('savingsRateTarget')) || 20, 0, 100);
-    DB.data.settings.emergencyMonthsTarget = clamp(parseInt(val('emergencyMonthsTarget')) || 6, 1, 24);
-    DB.data.settings.alertDays = clamp(parseInt(val('alertDays')) || 5, 0, 30);
+    DB.data.settings.savingsRateTarget = clamp(intOr(val('savingsRateTarget'), 0), 0, 100);
+    DB.data.settings.emergencyMonthsTarget = clamp(intOr(val('emergencyMonthsTarget'), 0), 0, 24);
+    DB.data.settings.alertDays = clamp(intOr(val('alertDays'), 0), 0, 30);
     DB.save(); renderAll();
     toast('Financial goals saved', 'ok');
     return;
@@ -3318,7 +3788,44 @@ document.addEventListener('click', e => {
     case 'quick-tab': openQuickAdd(el.dataset.tab); break;
     case 'toggle-notif': UI.notifOpen = !UI.notifOpen; renderTopbar(); break;
     case 'modal-close': closeModal(); break;
-    case 'confirm-yes': { const cb = pendingConfirm; closeModal(); if (cb) cb(); break; }
+    case 'confirm-yes': {
+      // Snapshot modal state before teardown destroys the DOM (checkboxes/radios).
+      const demoCb = document.getElementById('reset-demo');
+      const demoModeRadio = document.querySelector('input[name="demo-mode"]:checked');
+      const extras = {demo: demoCb ? demoCb.checked : false, mode: demoModeRadio ? demoModeRadio.value : 'merge'};
+      const cb = pendingConfirm;
+      closeModal();
+      if (cb) cb(extras);
+      break;
+    }
+
+    case 'load-demo': {
+      const initialMode = el.dataset.mode === 'replace' ? 'replace' : 'merge';
+      confirmModal({
+        title: 'Load demo data?',
+        confirmText: 'Load demo',
+        message: initialMode === 'replace'
+          ? 'Replaces your current data with a sample 5-month portfolio. Export a backup first if you want to keep anything.'
+          : 'Merges a sample 5-month portfolio alongside your current data — nothing existing is deleted.',
+        extraHtml:`<div class="flex flex-col gap-2 mb-4">
+            <label class="list-row cursor-pointer">
+              <input type="radio" name="demo-mode" value="merge" class="accent-[var(--accent)] w-4 h-4" ${initialMode !== 'replace' ? 'checked' : ''}>
+              <span class="text-sm font-semibold">Merge alongside my data</span></label>
+            <label class="list-row cursor-pointer">
+              <input type="radio" name="demo-mode" value="replace" class="accent-[var(--accent)] w-4 h-4" ${initialMode === 'replace' ? 'checked' : ''}>
+              <span class="text-sm font-semibold">Replace my data entirely</span></label>
+          </div>`,
+        onConfirm(extras){
+          try {
+            DB.loadDemo(extras && extras.mode === 'replace' ? 'replace' : 'merge');
+            applyTheme(DB.data.settings.theme);
+            UI.month = monthStart(new Date());
+            renderAll();
+            toast('Demo data loaded', 'ok');
+          } catch(e){ toast('Could not load demo data', 'err'); }
+        }});
+      break;
+    }
 
     case 'cal-day': openDayModal(el.dataset.date); break;
 
@@ -3424,18 +3931,23 @@ document.addEventListener('click', e => {
     case 'import-trigger': $('#import-file').click(); break;
     case 'factory-reset':
       confirmModal({title:'Factory reset local data?', danger:true, confirmText:'Purge everything',
-        message:'All transactions, accounts, categories and preferences stored in this browser will be destroyed.',
+        message:'All transactions, accounts, categories and preferences stored in this browser will be destroyed. A clean slate with base categories is loaded.',
         extraHtml:`<label class="list-row cursor-pointer mb-4">
-            <input type="checkbox" class="accent-[var(--green)] w-6 h-6" id="reset-demo" checked>
-            <span class="text-sm font-semibold">Reload sample demo data afterwards</span></label>`,
-        onConfirm(){
-          const demo = true;
+            <input type="checkbox" class="accent-[var(--green)] w-6 h-6" id="reset-demo">
+            <span class="text-sm font-semibold">Reload sample demo data afterwards (optional)</span></label>`,
+        onConfirm(extras){
+          const demo = !!(extras && extras.demo);
           DB.reset(demo);
+          // Teardown open popovers and transient UI state, then full re-render.
           UI.month = monthStart(new Date());
+          UI.searchOpen = false; UI.searchQ = ''; UI.notifOpen = false;
+          UI.sidebarMobileOpen = false;
+          UI.quickTab = 'transaction';
+          UI.acctQ = ''; UI.incQ = ''; UI.expQ = '';
           UI.tx = { q:'', cat:'all', acc:'all', type:'all', range:'month', from:'', to:'', sort:'date', dir:'desc', page:1, sel:new Set() };
           applyTheme(DB.data.settings.theme);
           setView('dashboard');
-          toast('Factory reset complete', 'ok');
+          toast(demo ? 'Factory reset complete — demo data loaded' : 'Factory reset complete — clean slate loaded', 'ok');
         }});
       break;
 
@@ -3483,6 +3995,31 @@ document.addEventListener('change', e => {
     UI.tx[t.dataset.filter] = t.value;
     UI.tx.page = 1;
     renderView();
+    return;
+  }
+  if (t.matches('[data-sync-mode]')){
+    // Balance model toggle: reveal the right field and keep continuity when
+    // flipping an existing account from manual to calculated.
+    const form = t.closest('form');
+    const calc = t.value === 'calculated';
+    form.querySelectorAll('.mode-manual').forEach(el => { el.style.display = calc ? 'none' : 'block'; });
+    form.querySelectorAll('.mode-calculated').forEach(el => { el.style.display = calc ? 'block' : 'none'; });
+    if (calc){
+      const idFld = form.querySelector('[name="id"]');
+      const initFld = form.querySelector('[name="initialBalance"]');
+      const balFld = form.querySelector('[name="balance"]');
+      if (initFld){
+        const a = idFld && idFld.value ? acct(idFld.value) : null;
+        if (a){
+          // Continuity: initial = current balance − Σ ledger effects, so the
+          // displayed balance does not jump when switching models.
+          const net = DB.data.transactions.reduce((s, tx) => s + txEffectOnAccount(tx, a.id), 0);
+          initFld.value = (Math.round(((Number(a.balance) || 0) - net) * 100) / 100).toFixed(2);
+        } else if (balFld && balFld.value !== ''){
+          initFld.value = balFld.value;
+        }
+      }
+    }
     return;
   }
   if (t.matches('[data-sync-cat]')){
@@ -3540,6 +4077,27 @@ document.addEventListener('input', e => {
   }
 });
 
+/* ---------- Delegated file drag & drop (static listeners — never rebound per render) ---------- */
+document.addEventListener('dragover', e => {
+  const types = e.dataTransfer && e.dataTransfer.types;
+  if (!types || !Array.from(types).includes('Files')) return;
+  e.preventDefault(); // always: stops the browser navigating away on a stray drop
+  const dz = e.target instanceof Element ? e.target.closest('#dropzone') : null;
+  if (dz) dz.classList.add('hot');
+});
+document.addEventListener('dragleave', e => {
+  const dz = e.target instanceof Element ? e.target.closest('#dropzone') : null;
+  if (dz) dz.classList.remove('hot');
+});
+document.addEventListener('drop', e => {
+  const dz = e.target instanceof Element ? e.target.closest('#dropzone') : null;
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!dz){ if (f) e.preventDefault(); return; }
+  e.preventDefault();
+  dz.classList.remove('hot');
+  if (f) importFile(f);
+});
+
 /* ---------- Keyboard shortcuts ---------- */
 document.addEventListener('keydown', e => {
   // Trap Tab inside an open modal so keyboard users can't tab into the inert background
@@ -3582,6 +4140,7 @@ document.addEventListener('keydown', e => {
 /* ---------- Resize (redraw charts) ---------- */
 let resizeTimer = null;
 window.addEventListener('resize', () => {
+  try { positionOverlayPops(); } catch(e){}
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => { try { renderView(); } catch(e){} }, 220);
 });

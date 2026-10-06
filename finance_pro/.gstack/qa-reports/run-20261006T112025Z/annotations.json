@@ -1,0 +1,56 @@
+{
+  "evidence": [
+    {
+      "capture": "001",
+      "command": "$B goto file:///.../index.html + screenshot + text",
+      "contract": "Fresh boot zeros",
+      "expected": "$0.00 everywhere, no phantom numbers",
+      "classification": "pass"
+    },
+    {
+      "capture": "002",
+      "command": "dashboard text scrape",
+      "contract": "No written-in targets",
+      "expected": "No '20% target' / '6 months' on zeroed slate",
+      "classification": "product-defect"
+    },
+    {
+      "capture": "003",
+      "command": "settings-goals form values",
+      "contract": "Settings targets default zero/blank",
+      "expected": "0/blank for savingsRateTarget, emergencyMonthsTarget, alertDays",
+      "classification": "product-defect"
+    },
+    {
+      "capture": "004",
+      "command": "per-view text scrape",
+      "contract": "All views render empty states",
+      "expected": "Zeroed totals, no crashes, no phantom data",
+      "classification": "pass"
+    },
+    {
+      "capture": "005",
+      "command": "load-demo replace + confirm",
+      "contract": "Demo only via explicit action",
+      "expected": "125 tx / 7 accounts after explicit load",
+      "classification": "pass"
+    },
+    {
+      "capture": "006",
+      "command": "factory-reset + unchecked demo cb",
+      "contract": "Reset returns clean slate",
+      "expected": "0 tx / 0 accounts, checkbox unchecked",
+      "classification": "pass"
+    },
+    {
+      "capture": "007",
+      "command": "$B console --errors",
+      "contract": "No console errors",
+      "expected": "clean",
+      "classification": "product-defect"
+    }
+  ],
+  "limits": [
+    "File origin, headless browse driver (Aside unavailable); single user slate; conclude duration bounded by 900s budget."
+  ]
+}
