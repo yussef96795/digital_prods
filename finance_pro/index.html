@@ -303,6 +303,7 @@ label.fld{ display:block; font-size:11.5px; font-weight:600; color:var(--muted);
   <div id="sidebar-backdrop"></div>
   <div class="flex-1 flex flex-col min-w-0">
     <header id="topbar"></header>
+    <div id="storage-banner" role="alert" class="hidden"></div>
     <main id="view" class="flex-1 overflow-y-auto"></main>
   </div>
 </div>
@@ -353,11 +354,16 @@ function money(n, opts={}){
   if (opts.signed) return (neg ? '−' : '+') + str;
   return (neg ? '−' : '') + str;
 }
+// Compact money for chart axes / donut centres: "$1.5M", "$12.35k", "$950".
+// The old regexes never matched what money() actually emits: "(\d)\.\d\d"
+// collapsed 1.5M to "$1M", and "\.0$" never matched "$10.00" → "$10.00k".
+const dropCents = s => s.replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
 const moneyShort = n => {
-  const a = Math.abs(n||0);
-  if (a >= 1000000) return money(Math.sign(n||0) * a/1e6).replace(/(\d)\.\d\d/, '$1') + 'M';
-  if (a >= 10000) return money(Math.sign(n||0) * Math.round(a/100)/10).replace(/\.0$/, '') + 'k';
-  return money(n);
+  const v = Number(n) || 0;
+  const a = Math.abs(v);
+  if (a >= 1000000) return dropCents(money(v / 1e6)) + 'M';
+  if (a >= 10000) return dropCents(money(v / 1e3)) + 'k';
+  return money(v);
 };
 const pct = (n, dp=0) => (Number.isFinite(n) ? n : 0).toFixed(dp) + '%';
 
@@ -559,16 +565,97 @@ function syncBalances(d){
 /* ---------- Persistent state ---------- */
 const STORAGE_KEY = 'PFM_PRO_DATA_v1';
 
+/* ---------- Storage health (Part C) -------------------------------
+   Persistence honesty: localStorage can be blocked (private windows), full
+   (quota) or read-only. When that happens the app keeps working in memory,
+   but nothing survives a reload — so we say so *persistently* instead of
+   dropping a toast that disappears. Two independent probes:
+     read  — getItem round-trip works
+     write — setItem does not throw
+   `ok` is only true when both pass; the reason string is kept for display.
+------------------------------------------------------------------- */
+const storageReason = e => {
+  const n = (e && e.name) || 'Error';
+  const m = (e && e.message) || '';
+  return n + (m ? ': ' + m : '');
+};
+const StorageWarn = {
+  readOk: true, writeOk: true, reason: '',
+  get ok(){ return this.readOk && this.writeOk; },
+  set(kind, ok, reason){
+    const prevOk = this.ok, prevReason = this.reason;
+    if (kind === 'read') this.readOk = !!ok; else this.writeOk = !!ok;
+    if (this.ok) this.reason = '';
+    else if (!ok) this.reason = reason || prevReason || 'localStorage is unavailable';
+    const changed = prevOk !== this.ok || prevReason !== this.reason;
+    if (!changed) return;
+    renderStorageWarning();
+    toast(this.ok ? 'Storage is working again — saving normally'
+                  : 'Storage unavailable — changes will not survive a reload',
+          this.ok ? 'ok' : 'err');
+  }
+};
+// Probe a real write + read round-trip through a scratch key.
+function probeStorage(){
+  let store = null;
+  try { store = window.localStorage; } catch(e){ return {read:false, write:false, reason:'localStorage is blocked (' + storageReason(e) + ')'}; }
+  if (!store) return {read:false, write:false, reason:'localStorage is not available in this browser'};
+  const k = 'PFM_PRO_PROBE';
+  let write = true, read = true, reason = '';
+  try { store.setItem(k, '1'); } catch(e){ write = false; reason = storageReason(e); }
+  if (write){
+    try { if (store.getItem(k) !== '1'){ read = false; reason = reason || 'reads returned nothing back'; } }
+    catch(e){ read = false; reason = reason || storageReason(e); }
+  }
+  try { store.removeItem(k); } catch(e){}
+  return {read, write, reason};
+}
+function refreshStorageHealth(){
+  const p = probeStorage();
+  StorageWarn.set('write', p.write, p.reason);
+  StorageWarn.set('read', p.read, p.reason);
+}
+// Persistent banner + topbar chip. Non-blocking: it never prevents use of the app.
+function renderStorageWarning(){
+  const banner = $('#storage-banner');
+  if (banner){
+    const ok = StorageWarn.ok;
+    banner.classList.toggle('hidden', ok);
+    if (ok) banner.innerHTML = '';
+    else {
+      banner.innerHTML = `
+        <div class="px-4 sm:px-6 py-2.5 flex flex-wrap items-center gap-2.5 text-[12.5px] leading-snug"
+             style="background:var(--red-soft);border-bottom:1px solid var(--red)">
+          <span class="shrink-0" style="color:var(--red)">${ic('alert-triangle','w-4 h-4')}</span>
+          <span class="flex-1 min-w-[240px] text-wrap-pretty">
+            <b>Not saving to this browser.</b> ${esc(StorageWarn.reason)} — edits are held in memory only and will be
+            lost on reload. Export a JSON backup to keep them.
+          </span>
+          <span class="flex gap-2 shrink-0">
+            <button class="btn btn-sm" data-action="export-json">${ic('download','w-3.5 h-3.5')}Export backup</button>
+            <button class="btn btn-sm" data-action="storage-retry">${ic('refresh-cw','w-3.5 h-3.5')}Retry</button>
+          </span>
+        </div>`;
+      icons(banner);
+    }
+  }
+  if (typeof DB !== 'undefined' && DB.data) renderTopbar();
+}
+
 const DB = {
   data: null,
   load(){
     let raw = null;
-    try { raw = localStorage.getItem(STORAGE_KEY); } catch(e){}
+    try { raw = localStorage.getItem(STORAGE_KEY); StorageWarn.set('read', true); }
+    catch(e){ StorageWarn.set('read', false, storageReason(e)); }
     if (raw){
       try {
         const parsed = JSON.parse(raw);
         if (this.validate(parsed)){ this.data = this.normalize(parsed); syncBalances(this.data); this.save(); return; }
-      } catch(e){}
+        toast('Saved data is missing required sections — reloading sample data', 'err');
+      } catch(e){
+        toast('Saved data was unreadable (' + storageReason(e) + ') — reloading sample data', 'err');
+      }
     }
     this.data = this.seed();
     syncBalances(this.data);
@@ -576,8 +663,8 @@ const DB = {
   },
   seed(){ const d = seedData(); this.data = d; syncBalances(d); return d; },
   save(){
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); }
-    catch(e){ toast('Storage failed — data not saved', 'err'); }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); StorageWarn.set('write', true); }
+    catch(e){ StorageWarn.set('write', false, storageReason(e)); }
   },
   validate(d){
     if (!d || typeof d !== 'object') return false;
@@ -610,7 +697,9 @@ const DB = {
       tasks: d.tasks || []
     };
   },
-  reset(withDemo=true){
+  // withDemo=false → start empty (settings + empty collections, no sample rows)
+  // withDemo=true  → reload the deterministic sample portfolio
+  reset(withDemo=false){
     try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
     this.data = withDemo ? seedData() : this.normalize({});
     syncBalances(this.data);
@@ -624,6 +713,7 @@ const UI = {
   month: monthStart(new Date()),   // cursor month for all period metrics
   sidebarCollapsed: false,
   sidebarMobileOpen: false,
+  resetDemo: false,                // factory-reset dialog choice (captured before the modal closes)
   quickTab: 'transaction',
   searchOpen: false, searchQ: '', notifOpen: false,
   tx: { q:'', cat:'all', acc:'all', type:'all', range:'month', from:'', to:'', sort:'date', dir:'desc', page:1, sel:new Set() },
@@ -636,7 +726,18 @@ const cat = id => DB.data.categories.find(c => c.id === id);
 const acct = id => DB.data.accounts.find(a => a.id === id);
 const catName = id => (cat(id) || {name:'Uncategorized'}).name;
 
-/* ---------- Period helpers (budget cycle aware) ---------- */
+/* ---------- Period helpers (budget cycle aware) ----------
+   CURSOR RULE (Part C) — one clock per number, never two:
+   1. Every period metric reads an explicit cursor; one function must not mix
+      "the selected period" with "right now".
+   2. View-bound surfaces (KPIs, budgets, charts, calendar, month nav) use UI.month.
+   3. Global "now" surfaces (attention bell, Today, alerts) never read UI.month —
+      they derive their cursor from a single `now` via currentPeriodCursor() /
+      monthStart(now), so paging through history cannot change a global alert.
+   4. Bills are keyed by calendar month (paidPeriods = dayKey of a date) and
+      budgets by budget period; when budgetStartDay === 1 both cursors are the
+      same date, which is the default configuration.
+-------------------------------------------------------------------- */
 function periodRange(cursor){
   const sd = clamp(DB.data.settings.budgetStartDay || 1, 1, 31);
   const y = cursor.getFullYear(), m = cursor.getMonth();
@@ -654,15 +755,28 @@ function isCurrentPeriod(cursor){
   const now = new Date();
   return now >= start && now < end;
 }
-function daysElapsedInPeriod(){
-  const {start, end} = periodRange(UI.month);
+// The cursor whose budget period contains `now`. Equal to monthStart(now) when
+// budgetStartDay === 1; rolls back one month once today falls before this
+// month's cycle start day (start day 15, today the 5th → last month's cursor).
+function currentPeriodCursor(now){
+  const n = now || new Date();
+  const thisMonth = monthStart(n);
+  const {start} = periodRange(thisMonth);
+  return n < start ? addMonths(thisMonth, -1) : thisMonth;
+}
+// Whole days elapsed inside `cursor`'s period: 0 before the period starts, the
+// full period length once it is over, otherwise calendar days counted from the
+// start day (DST-safe via daysBetween — never ms ceilings or clamped clocks).
+function daysElapsedInPeriod(cursor = UI.month){
   const now = new Date();
-  const nowClamped = now < end ? now : end;
-  return Math.max(1, Math.ceil((nowClamped - start) / 86400000));
+  const {start, end} = periodRange(cursor);
+  if (now >= end) return periodDays(cursor);
+  if (now < start) return 0;
+  return Math.max(1, daysBetween(iso(start), iso(now)) + 1);
 }
 const periodDays = cursor => {
   const {start, end} = periodRange(cursor);
-  return Math.max(1, Math.round((end - start) / 86400000));
+  return Math.max(1, daysBetween(iso(start), iso(end)));
 };
 const dayKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 // paidPeriods stores canonical month keys (dayKey of any day in the month).
@@ -740,9 +854,12 @@ function metrics(){
     const due = new Date(now.getFullYear(), now.getMonth(), clampDay(now.getFullYear(), now.getMonth(), b.dueDay||1));
     return due < new Date(now.getFullYear(), now.getMonth(), now.getDate());
   });
+  const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const upcoming30 = billsNow.filter(b => {
     const due = new Date(now.getFullYear(), now.getMonth(), clampDay(now.getFullYear(), now.getMonth(), b.dueDay||1));
-    const diff = Math.round((due - now) / 86400000);
+    // Whole days against midnight, not against the current time: with `now`
+    // (19:00) a bill due today rounded to -1 and fell out of "next 30 days".
+    const diff = Math.round((due - todayMid) / 86400000);
     return diff >= 0 && diff <= 30;
   });
 
@@ -782,10 +899,17 @@ function metrics(){
 function attentionItems(){
   const items = [];
   const now = new Date(), todayISOs = iso(now);
+  // CURSOR RULE: global, now-facing surface — this never reads UI.month, so
+  // paging through history cannot change what the bell reports. One `now`
+  // drives every check: bills use the calendar month of today (paidPeriods are
+  // calendar keys), budgets use the budget period containing today (the same
+  // date when budgetStartDay === 1), subscriptions carry absolute dates.
+  const billCursor = monthStart(now);
+  const budgetCursor = currentPeriodCursor(now);
   DB.data.bills.forEach(b => {
-    const due = billDueDate(b, monthStart(now));
+    const due = billDueDate(b, billCursor);
     const dueISO = iso(due);
-    if (!billPaid(b, monthStart(now))){
+    if (!billPaid(b, billCursor)){
       const diff = daysBetween(todayISOs, dueISO);
       if (diff < 0) items.push({level:'overdue', color:'var(--red)', title:`${b.name} is overdue`,
         sub:`${money(b.amount)} was due ${Math.abs(diff)} day${Math.abs(diff)===1?'':'s'} ago`, view:'bills'});
@@ -802,7 +926,7 @@ function attentionItems(){
       items.push({level:'due-soon', color:'var(--amber)', title:`${s.name} renews today`, sub:`${money(s.amount)} ${s.cycle}`, view:'subscriptions'});
   });
   DB.data.categories.filter(c => c.budget > 0).forEach(c => {
-    const spent = periodTx(UI.month).filter(t => t.type === 'expense' && t.categoryId === c.id)
+    const spent = periodTx(budgetCursor).filter(t => t.type === 'expense' && t.categoryId === c.id)
       .reduce((s,t) => s + t.amount, 0);
     const p = (spent / c.budget) * 100;
     if (p >= 100) items.push({level:'overdue', color:'var(--red)', title:`${c.name} budget exceeded`,
@@ -1517,8 +1641,12 @@ function calendarGridHTML(opts={}){
 }
 function agendaListHTML(billsOnly=false){
   const cur = UI.month, now = new Date();
+  // Walk whole calendar days: `end` is the last day of the month at 00:00, so a
+  // start carrying the current time-of-day would run past it and silently drop
+  // the final day (and empty the whole agenda when today *is* that last day).
   const end = new Date(cur.getFullYear(), cur.getMonth()+1, 0);
-  const start = (dayKey(now) === dayKey(cur)) ? now : new Date(cur);
+  const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const start = (dayKey(now) === dayKey(cur)) ? todayMid : new Date(cur.getFullYear(), cur.getMonth(), 1);
   const items = [];
   for (let d = new Date(start); d <= end; d = addDays(d, 1)){
     const dISO = iso(d);
@@ -2215,10 +2343,16 @@ VIEWS.bills = {
     const m = metrics();
     const now = new Date();
     const bills = DB.data.bills.slice().sort((a,b) => a.dueDay - b.dueDay);
+    // Bills are calendar-month obligations: the due date, the paid state and the
+    // status badge must all be computed for the *current* month — the same key
+    // setBillPaid() writes. Mixing cursors made a card read "due Oct 1" while its
+    // badge was evaluated against the month selected in the top bar. Browsing
+    // other months is what the Bill Calendar view is for.
+    const billsMonth = monthStart(now);
     const cards = bills.length ? bills.map(b => {
-      const status = billStatus(b);
+      const status = billStatus(b, billsMonth);
       const paid = status === 'paid';
-      const due = billDueDate(b, monthStart(now));
+      const due = billDueDate(b, billsMonth);
       const badge = paid ? `<span class="badge badge-green">Paid</span>`
         : status === 'overdue' ? `<span class="badge badge-red">Overdue</span>`
         : status === 'due-soon' ? `<span class="badge badge-amber">Due soon</span>`
@@ -2286,7 +2420,12 @@ VIEWS.subscriptions = {
     const subCard = s => {
       const days = daysBetween(now, s.next);
       const trialSoon = s.trialEnd && daysBetween(now, s.trialEnd) >= 0 && daysBetween(now, s.trialEnd) <= 7;
-      const renewIn = days <= 0 ? 'renews today' : days === 1 ? 'renews tomorrow' : `renews in ${days}d`;
+      // `days < 0` means the renewal date has already passed. The old ternary
+      // folded it into "renews today", so a stale date read as a live renewal.
+      const renewIn = days < 0 ? `renewal ${Math.abs(days)}d overdue`
+        : days === 0 ? 'renews today'
+        : days === 1 ? 'renews tomorrow'
+        : `renews in ${days}d`;
       return `<div class="card card-hover p-4" style="${trialSoon ? 'border-color:var(--amber)' : ''}">
         <div class="flex items-start justify-between gap-3 mb-3">
           <div class="flex items-start gap-2.5 min-w-0">
@@ -2298,6 +2437,7 @@ VIEWS.subscriptions = {
           </div>
           ${!s.active ? `<span class="badge badge-neutral">Cancelled</span>`
             : trialSoon ? `<span class="badge badge-amber">Trial ends ${fmtDateShort(s.trialEnd)}</span>`
+            : days < 0 ? `<span class="badge badge-red">${renewIn}</span>`
             : days <= 7 ? `<span class="badge badge-amber">${renewIn}</span>`
             : `<span class="badge badge-green">Active</span>`}
         </div>
@@ -3222,19 +3362,23 @@ document.addEventListener('click', e => {
     case 'export-csv': exportCSV(); break;
     case 'import-trigger': $('#import-file').click(); break;
     case 'factory-reset':
+      UI.resetDemo = false; // default: start empty
       confirmModal({title:'Factory reset local data?', danger:true, confirmText:'Purge everything',
         message:'All transactions, accounts, categories and preferences stored in this browser will be destroyed.',
         extraHtml:`<label class="list-row cursor-pointer mb-4">
-            <input type="checkbox" class="accent-[var(--green)] w-4 h-4" id="reset-demo" checked>
-            <span class="text-[13px] font-semibold">Reload sample demo data afterwards</span></label>`,
+            <input type="checkbox" class="accent-[var(--green)] w-4 h-4" id="reset-demo">
+            <span class="text-[13px] font-semibold">Reload sample demo data afterwards (unchecked = start empty)</span></label>`,
         onConfirm(){
-          const demo = true;
+          // The confirm modal is closed before this runs, so the checkbox value was
+          // captured by the document 'change' listener into UI.resetDemo.
+          const demo = !!UI.resetDemo;
           DB.reset(demo);
+          UI.resetDemo = false;
           UI.month = monthStart(new Date());
           UI.tx = { q:'', cat:'all', acc:'all', type:'all', range:'month', from:'', to:'', sort:'date', dir:'desc', page:1, sel:new Set() };
           applyTheme(DB.data.settings.theme);
           setView('dashboard');
-          toast('Factory reset complete', 'ok');
+          toast(demo ? 'Factory reset complete — sample data loaded' : 'Factory reset complete — starting empty', 'ok');
         }});
       break;
 
